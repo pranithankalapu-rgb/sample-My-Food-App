@@ -20,6 +20,50 @@ describe("GET /health", () => {
   });
 });
 
+describe("GET /health/deps", () => {
+  check(
+    { endpoint: "health.deps", category: "success" },
+    "reports each dependency as up/down/disabled/misconfigured with a time, without a token",
+    async () => {
+      const res = await anon.system.dependencies();
+      expect(res.status).toBe(200);
+      expect(["ok", "degraded"]).toContain(res.data.status);
+      expect(Number.isNaN(Date.parse(res.data.checked_at))).toBe(false);
+      expect(Object.keys(res.data.services).sort()).toEqual(["database", "ocr", "open_food_facts", "openai"]);
+      for (const [name, s] of Object.entries(res.data.services)) {
+        expect(["up", "down", "disabled", "misconfigured"], name).toContain(s.status);
+        expect(s.ms, name).toBeGreaterThanOrEqual(0);
+      }
+      expect(res.data.services.database.status).toBe("up");
+      expect(res.headers["cache-control"]).toBe("no-store");
+    },
+    30_000,
+  );
+
+  check(
+    { endpoint: "health.deps", category: "success" },
+    "is cached: a second call within 30 s gives the same check, quickly",
+    async () => {
+      const first = await anon.system.dependencies();
+      const second = await anon.system.dependencies();
+      expect(second.data.checked_at).toBe(first.data.checked_at);
+      expect(second.durationMs).toBeLessThan(500);
+    },
+    30_000,
+  );
+
+  check(
+    { endpoint: "health.deps", category: "auth" },
+    "never exposes keys, URLs or error details, and ignores an invalid token",
+    async () => {
+      const res = await client(env.realApi, "not-a-token").system.dependencies({ token: "not-a-token" });
+      expect(res.status).toBe(200);
+      expect(JSON.stringify(res.data)).not.toMatch(/sk-|Bearer|https?:\/\/|ECONN|Error/i);
+    },
+    30_000,
+  );
+});
+
 describe("GET /uploads/images/{file}", () => {
   check(
     { endpoint: "uploads.static", category: "success" },

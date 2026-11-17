@@ -372,8 +372,8 @@ describe("speed: external services", () => {
         () => user.api.product.scanLabel(png(800, 600)),
         {
           n: 5,
-          expectStatus: [500],
-          note: "OCR service unreachable: each call waits for the API's 30 s timeout; 5 samples",
+          expectStatus: [503],
+          note: "OCR service unreachable: the API gives up after its 10 s connect timeout (503 + Retry-After); 5 samples",
         },
       ),
     300_000,

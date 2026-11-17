@@ -381,3 +381,22 @@ export interface IdentifiersResponse {
 export interface HealthResponse {
   status: "ok";
 }
+
+export type DependencyState = "up" | "down" | "disabled" | "misconfigured";
+
+export interface DependencyCheck {
+  status: DependencyState;
+  ms: number;
+}
+
+/** GET /health/deps: the API's own view of its dependencies (cached 30 s). 503 only when the database is down. */
+export interface DependencyHealthResponse {
+  status: "ok" | "degraded" | "down";
+  checked_at: string;
+  services: {
+    database: DependencyCheck;
+    open_food_facts: DependencyCheck;
+    openai: DependencyCheck;
+    ocr: DependencyCheck;
+  };
+}

@@ -12,7 +12,8 @@
       "lib/api/utils/{scanUpload,uploadConfig}.js, lib/responseHandler.js"
     ],
     "swagger": "none (no OpenAPI/Swagger file in the backend)",
-    "registrationCount": { "router": 31, "app": 2, "total": 33 },
+    "registrationCount": { "router": 31, "app": 3, "total": 34 },
+    "addedOnFixBranch": ["GET /health/deps (fix/api-hardening)"],
     "auth": {
       "token": "HS256 JWT in 'x-access-token' or 'Authorization: Bearer <token>'. Body/query tokens only when ALLOW_LEGACY_TOKEN_LOCATIONS is on.",
       "levels": {
@@ -33,7 +34,7 @@
       "notFoundRoute": { "status": 404, "body": { "status": 404, "message": "Not found." } },
       "server": { "status": 500, "body": "{ message: \"Internal Server Error\" } or { status: 500, message: \"Internal server error.\" } (varies per handler)" }
     },
-    "errorFormatNote": "There is no single error format: validation uses {error, message, details}; auth and legacy handlers use {status, message}; product/OCR handlers use {message} or {error}; identifiers uses {status: \"error\", message}."
+    "errorFormatNote": "Before fix/api-hardening there was no single error format: validation used {error, message, details}; auth and legacy handlers {status, message}; product/OCR handlers {message} or {error}; identifiers {status: \"error\", message}. Since 26e35d0 every error body (status >= 400) also carries a numeric status and a message; the old fields stay (additive)."
   },
   "endpoints": [
     {
@@ -51,6 +52,23 @@
       "purpose": "Liveness probe used by Docker healthchecks. Not logged.",
       "example": {},
       "coverage": { "webApp": [], "webAppTests": ["e2e 01-health: 200 {status:ok}, also via /api proxy"], "backendTests": ["security.test.js"] }
+    },
+    {
+      "id": "health.deps",
+      "group": "System",
+      "method": "GET",
+      "path": "/health/deps",
+      "auth": "none",
+      "rateLimit": null,
+      "params": [], "query": [], "body": [],
+      "responses": [
+        { "status": 200, "when": "the database answers; status is \"ok\", or \"degraded\" when another service is down or misconfigured", "body": { "status": "degraded", "checked_at": "2026-11-17T12:11:50.897Z", "services": { "database": { "status": "up", "ms": 15 }, "open_food_facts": { "status": "up", "ms": 699 }, "openai": { "status": "up", "ms": 1604 }, "ocr": { "status": "down", "ms": 5004 } } } },
+        { "status": 503, "when": "the database is down (same body shape, status \"down\")", "body": { "status": "down", "checked_at": "…", "services": { "database": { "status": "down", "ms": 5000 } } } }
+      ],
+      "dataSource": ["DB", "Open Food Facts", "OpenAI", "OCR service"],
+      "purpose": "The API's own view of its dependencies: up, down, disabled (no key) or misconfigured (key refused), with each check's time. Never returns keys or error details. Cached 30 s, so it cannot multiply external calls. Added on fix/api-hardening (issue #14).",
+      "example": {},
+      "coverage": { "webApp": ["Status page: As the API sees them"], "webAppTests": ["api 01-system: shape, no token needed, cached, no secrets"], "backendTests": ["apiHardening.test.js"] }
     },
     {
       "id": "uploads.static",

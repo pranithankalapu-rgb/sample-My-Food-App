@@ -12,6 +12,18 @@ let admin: Session;
 let testUser: Session;
 const KNOWN = "8715700407760";
 
+// Decision 1a (Checkpoint 2): a code that cannot be a retail barcode keeps the
+// 404 the mobile app expects, but it is refused before Open Food Facts or the
+// AI fallback is asked. reason "invalid_barcode" comes only from that check,
+// and the quick answer shows no external call was made (Open Food Facts alone
+// takes ~0.7 s; with the AI it takes 9–11 s).
+async function expectRejectedBeforeLookup(code: string): Promise<void> {
+  const err = await failure(testUser.api.product.lookup(code));
+  expect(err.status, code).toBe(404);
+  expect(err.body, code).toMatchObject({ reason: "invalid_barcode" });
+  expect(err.durationMs ?? Infinity, `${code} answered without external lookups`).toBeLessThan(500);
+}
+
 beforeAll(async () => {
   user = await newUser(env.realApi, "product");
   admin = await realAdmin();
@@ -102,9 +114,7 @@ describe("GET /product/{code}", () => {
     { endpoint: "product.lookup", category: "invalid barcode" },
     "letters-only barcode: rejected before any external lookup",
     async () => {
-      // a robust API would refuse it without asking Open Food Facts or the AI
-      const err = await failure(testUser.api.product.lookup("ABCDEFGH"));
-      expect(err.status).toBe(400);
+      await expectRejectedBeforeLookup("ABCDEFGH");
     },
     90_000,
   );
@@ -113,8 +123,9 @@ describe("GET /product/{code}", () => {
     { endpoint: "product.lookup", category: "invalid barcode" },
     "wrong-length barcode (4 digits): rejected before any external lookup",
     async () => {
-      const err = await failure(testUser.api.product.lookup("1234"));
-      expect(err.status).toBe(400);
+      await expectRejectedBeforeLookup("1234");
+      // nothing was stored for it: a second lookup is refused the same way
+      await expectRejectedBeforeLookup("1234");
     },
     90_000,
   );
@@ -123,8 +134,7 @@ describe("GET /product/{code}", () => {
     { endpoint: "product.lookup", category: "invalid barcode" },
     "bad check digit (8715700407761): rejected before any external lookup",
     async () => {
-      const err = await failure(testUser.api.product.lookup("8715700407761"));
-      expect(err.status).toBe(400);
+      await expectRejectedBeforeLookup("8715700407761");
     },
     90_000,
   );

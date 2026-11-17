@@ -1,4 +1,4 @@
-// One typed function per backend endpoint (all 33 in src/data/api-inventory.json).
+// One typed function per backend endpoint (all 34 in src/data/api-inventory.json).
 // Every function returns the full HttpResponse (data, status, headers, time).
 import type { HttpClient, HttpMethod, HttpRequest, HttpResponse } from "./http";
 import type * as T from "./types";
@@ -29,6 +29,8 @@ export function createApi(http: HttpClient) {
   return {
     system: {
       health: (o?: Opts) => call<T.HealthResponse>("GET", "/health", { token: null, ...o }),
+      dependencies: (o?: Opts) =>
+        call<T.DependencyHealthResponse>("GET", "/health/deps", { token: null, ...o }),
       uploadedImage: (file: string, o?: Opts) =>
         call<Blob>("GET", `/uploads/images/${enc(file)}`, { token: null, responseType: "blob", ...o }),
     },
@@ -151,6 +153,7 @@ const bodyAs = (input: ExplorerInput): never => input.body as never;
 
 export const endpointRegistry = {
   health: { method: "GET", path: "/health", send: (a, i) => a.system.health(i.opts) },
+  "health.deps": { method: "GET", path: "/health/deps", send: (a, i) => a.system.dependencies(i.opts) },
   "uploads.static": {
     method: "GET",
     path: "/uploads/images/{file}",

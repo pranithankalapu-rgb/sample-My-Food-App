@@ -22,6 +22,12 @@ test.describe("health and Status page", () => {
     await expect(page.getByTestId("status-database")).toHaveAttribute("data-state", "up");
     await expect(page.getByTestId("status-off")).toHaveAttribute("data-state", "up");
     await expect(page.getByTestId("status-openai")).toHaveAttribute("data-state", "up");
+    // GET /health/deps: the API's own view of the same services
+    await expect(page.getByTestId("api-deps")).toHaveAttribute("data-state", /ok|degraded/, { timeout: 30_000 });
+    for (const key of ["database", "open_food_facts", "openai", "ocr"]) {
+      await expect(page.getByTestId(`api-deps-${key}`)).toHaveAttribute("data-state", /up|down|disabled|misconfigured/);
+    }
+    await expect(page.getByTestId("api-deps-database")).toHaveAttribute("data-state", "up");
     await shot(page, "01-status");
     expect(problems).toEqual([]);
   });

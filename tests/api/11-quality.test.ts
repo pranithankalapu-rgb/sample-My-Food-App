@@ -161,14 +161,23 @@ describe("accuracy against live Open Food Facts (20 random products)", () => {
             match,
           });
         }
-        const offIngredients = o.ingredients_text_en || o.ingredients_text || "";
-        const sim = similarity(p.ingredients_text, offIngredients);
+        // Open Food Facts has up to two lists (English and the product's main
+        // language); the stored list is accurate when it is one of them. The
+        // backend keeps the main-language list when the "English" one is not
+        // English or describes another recipe, so both are compared.
+        const candidates = [
+          { which: "English list", text: o.ingredients_text_en ?? "" },
+          { which: "main-language list", text: o.ingredients_text ?? "" },
+        ].filter((c) => c.text.trim() !== "");
+        const best = candidates
+          .map((c) => ({ ...c, sim: similarity(p.ingredients_text, c.text) }))
+          .sort((a, b) => b.sim - a.sim)[0] ?? { which: "no list", text: "", sim: 0 };
         fields.push({
           field: "ingredients",
           api: p.ingredients_text.slice(0, 160),
-          reference: offIngredients.slice(0, 160),
-          match: sim >= 0.8,
-          note: `word overlap ${Math.round(sim * 100)}%`,
+          reference: best.text.slice(0, 160),
+          match: best.sim >= 0.8,
+          note: `word overlap ${Math.round(best.sim * 100)}% with Open Food Facts' ${best.which}`,
         });
         let imageOk = false;
         if (p.image_url) {
@@ -214,6 +223,25 @@ const FOREIGN =
   /\b(sucre|farine|huile|sel|lait|eau|beurre|oeufs?|œufs?|azúcar|harina|aceite|leche|sal|agua|zucchero|farina|olio|latte|zucker|mehl|wasser|açúcar|óleo|água|ingrédients?|ingredientes|ingredienti|zutaten)\b|[؀-ۿ]/i;
 const GARBLED = /Ã.|Â.|â€|�|\\u00/;
 
+const percentages = (text: string): number[] =>
+  [...text.matchAll(/(\d+(?:[.,]\d+)?)\s*%/g)]
+    .map((m) => Number((m[1] ?? "").replace(",", ".")))
+    .sort((a, b) => a - b);
+
+// Why a stored list is not English. Each case is still reported as a problem;
+// the wording says whether a usable English list exists on Open Food Facts.
+function languageIssue(o: OffProduct | undefined): string {
+  if (!o) return "not in English (Open Food Facts reference unavailable)";
+  const en = o.ingredients_text_en?.trim() ?? "";
+  if (!en) return `untranslated (${o.lang ?? "unknown language"}; no English list on Open Food Facts)`;
+  if (FOREIGN.test(en)) return "untranslated (Open Food Facts' English field holds another language)";
+  const a = percentages(en);
+  const b = percentages(o.ingredients_text ?? "");
+  if (a.length && b.length && (a.length !== b.length || a.some((v, i) => v !== b[i])))
+    return "untranslated (Open Food Facts' English list is a different recipe: percentages differ)";
+  return "not in English although Open Food Facts has a usable English list";
+}
+
 describe("ingredient lists (same 20 products)", () => {
   check(
     { endpoint: "product.lookup", category: "ingredients" },
@@ -229,14 +257,7 @@ describe("ingredient lists (same 20 products)", () => {
         if (/<[a-z/][^>]*>/i.test(text)) issues.push("contains HTML");
         if (/_[^_\s]+_/.test(text)) issues.push("contains Open Food Facts markup (_word_)");
         if (/[,;:]\s*$/.test(text)) issues.push("ends with a separator (truncated or untidy)");
-        if (text && FOREIGN.test(text))
-          issues.push(
-            !o
-              ? "not in English (Open Food Facts reference unavailable)"
-              : o.ingredients_text_en
-                ? "not in English although Open Food Facts has an English list"
-                : `untranslated (${o.lang ?? "unknown language"}; no English list on Open Food Facts)`,
-          );
+        if (text && FOREIGN.test(text)) issues.push(languageIssue(o));
         return { code: p.code, name: p.product_name, ok: issues.length === 0, text, issues };
       });
       writeRaw("ingredients.json", rows);

@@ -27,6 +27,16 @@ export const keys = {
   status: (name: string) => ["status", name] as const,
 };
 
+/** The API's own dependency check (the server caches it for 30 s). */
+export function useDependencyHealth() {
+  return useQuery({
+    queryKey: ["dependency-health"] as const,
+    queryFn: ({ signal }) => api.system.dependencies({ signal }),
+    refetchInterval: 30_000,
+    staleTime: 0,
+  });
+}
+
 /** A lookup counts as a scan on the server, so it is cached for 10 minutes. */
 export function useProduct(code: string, enabled = true) {
   return useQuery({
