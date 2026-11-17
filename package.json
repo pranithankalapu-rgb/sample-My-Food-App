@@ -1,0 +1,20 @@
+{
+  "name": "myfoodapp-sample-frontend",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Sample web frontend for the My Food App API (talks to it only over HTTP).",
+  "scripts": {
+    "build": "vite build"
+  },
+  "dependencies": {
+    "@zxing/browser": "0.2.1",
+    "@zxing/library": "0.23.0",
+    "react": "19.3.1",
+    "react-dom": "19.3.1"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "6.3.0",
+    "vite": "8.3.8"
+  }
+}

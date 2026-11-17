@@ -1,0 +1,54 @@
+# Sample frontend for the My Food App API. Separate compose project: starting
+# or stopping it never touches the backend's containers. It joins the
+# backend's Docker network (external) and reaches the API by service name.
+#
+#   docker compose up -d --build web          # http://localhost:4200
+#   ./scripts/run-e2e.sh                      # Playwright end-to-end run
+#
+# The backend stack must already be running (its network must exist).
+
+name: myfoodapp-sample-frontend
+
+services:
+  web:
+    build: .
+    image: myfoodapp-sample-frontend:local
+    environment:
+      # the API as seen from this container (service name on the backend network)
+      API_BASE_URL: ${API_BASE_URL:-http://api:9595}
+    ports:
+      - "${WEB_PORT:-4200}:80"
+    networks:
+      - backend
+    restart: unless-stopped
+
+  # Playwright, in its own container, against the running stack. Started by
+  # scripts/run-e2e.sh (it prepares the test users and data first).
+  e2e:
+    profiles: ["e2e"]
+    build: ./e2e
+    image: myfoodapp-sample-frontend-e2e:local
+    environment:
+      PHASE: ${PHASE:-adhoc}
+      # host:port targets inside the backend network; the container forwards
+      # its own localhost ports to them, so the browser sees the same URLs a
+      # developer sees on the host (and the API's absolute image URLs work)
+      WEB_TARGET: ${WEB_TARGET:-web:80}
+      API_TARGET: ${API_TARGET:-api:9595}
+      CMS_TARGET: ${CMS_TARGET:-cms:3000}
+      WEB_URL: http://localhost:4200
+      API_URL: http://localhost:9595
+      CMS_URL: http://localhost:3000
+    volumes:
+      - ./e2e-report:/e2e/e2e-report
+      - ./.e2e-run:/e2e/.e2e-run:ro
+    ipc: host
+    networks:
+      - backend
+    depends_on:
+      - web
+
+networks:
+  backend:
+    external: true
+    name: ${BACKEND_NETWORK:-myfoodapp_default}
