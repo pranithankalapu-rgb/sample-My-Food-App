@@ -69,14 +69,17 @@ export default function App() {
 
   return (
     <Shell
+      account={
+        <div className="account">
+          <span className="who" data-testid="current-user">{session.user?.email}</span>
+          <button type="button" className="link" onClick={() => logout()}>Log out</button>
+        </div>
+      }
       nav={
-        <nav className="nav" aria-label="Main">
+        <nav className="sidenav" aria-label="Main">
           <a href="#/lookup" className={route.path === "/lookup" ? "active" : ""}>Barcode lookup</a>
           <a href="#/search" className={route.path === "/search" ? "active" : ""}>Browse &amp; search</a>
           <a href="#/scan" className={route.path === "/scan" ? "active" : ""}>Label scan</a>
-          <span className="spacer" />
-          <span className="who" data-testid="current-user">{session.user?.email}</span>
-          <button type="button" className="link" onClick={() => logout()}>Log out</button>
         </nav>
       }
     >
@@ -85,14 +88,21 @@ export default function App() {
   );
 }
 
-function Shell({ nav, children }) {
+function Shell({ nav, account, children }) {
   return (
     <div className="app">
       <header className="header">
         <a href="#/lookup" className="brand">My Food App <small>sample frontend</small></a>
-        {nav}
+        {account}
       </header>
-      <main className="main">{children}</main>
+      {nav ? (
+        <div className="layout">
+          <aside className="sidebar">{nav}</aside>
+          <main className="main">{children}</main>
+        </div>
+      ) : (
+        <main className="main">{children}</main>
+      )}
     </div>
   );
 }
