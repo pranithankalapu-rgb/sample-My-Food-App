@@ -1,0 +1,76 @@
+# Test runners, used together with docker-compose.yml by scripts/run-all-tests.sh:
+#   docker compose -f docker-compose.yml -f docker-compose.tests.yml run --rm tools ...
+#   docker compose -f docker-compose.yml -f docker-compose.tests.yml run --rm e2e ...
+# Both join the backend network and the test-only stack's network
+# (docker-compose.apitest.yml must be up).
+
+services:
+  # Node + the app's own sources: lint, typecheck, unit tests and the Vitest
+  # API tests (which use the app's typed API client).
+  tools:
+    profiles: ["tests"]
+    build:
+      context: .
+      target: tools
+    image: myfoodapp-sample-frontend-tools:local
+    working_dir: /app
+    environment:
+      RUN_ID: ${RUN_ID:-local}
+      REAL_API_URL: http://api:9595
+      TEST_API_URL: http://api-t:9595
+      PERF_API_URL: http://api-perf:9595
+      MAILPIT_URL: http://mailpit:8025
+      TOX_OFF_URL: http://tox-off:8474
+      TOX_AI_URL: http://tox-ai:8474
+      RUN_DIR: /app/.e2e-run
+      RAW_RESULTS_DIR: /app/test-results/raw
+    volumes:
+      # current sources without rebuilding the image
+      - ./src:/app/src:ro
+      - ./tests:/app/tests:ro
+      - ./scripts:/app/scripts:ro
+      - ./docs:/app/docs
+      - ./test-results:/app/test-results
+      - ./e2e-report:/app/e2e-report:ro
+      - ./.e2e-run:/app/.e2e-run:ro
+    networks:
+      - backend
+      - apitest
+
+  # Playwright: every page, against the real stack (web) and the test stack (web-t).
+  e2e:
+    profiles: ["tests"]
+    build: ./e2e
+    image: myfoodapp-sample-frontend-e2e:local
+    environment:
+      PHASE: ${PHASE:-adhoc}
+      RUN_ID: ${RUN_ID:-local}
+      # the container forwards its own localhost ports to these, so the browser
+      # sees the same URLs a developer sees on the host (and the API's absolute
+      # image URLs work)
+      WEB_TARGET: web:80
+      API_TARGET: api:9595
+      CMS_TARGET: cms:3000
+      WEB_T_TARGET: web-t:80
+      API_T_TARGET: api-t:9595
+      MAILPIT_TARGET: mailpit:8025
+      WEB_URL: http://localhost:4200
+      API_URL: http://localhost:9595
+      CMS_URL: http://localhost:3000
+      WEB_T_URL: http://localhost:4201
+      API_T_URL: http://localhost:9598
+      MAILPIT_URL: http://localhost:8025
+      TOX_OFF_URL: http://tox-off:8474
+    volumes:
+      - ./e2e-report:/e2e/e2e-report
+      - ./test-results:/e2e/test-results
+      - ./.e2e-run:/e2e/.e2e-run:ro
+    ipc: host
+    networks:
+      - backend
+      - apitest
+
+networks:
+  apitest:
+    external: true
+    name: myfoodapp_apitest

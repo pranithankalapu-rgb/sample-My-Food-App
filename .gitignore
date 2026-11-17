@@ -3,7 +3,10 @@ dist/
 .env
 .env.*
 e2e-report/
-# per-run test users and fixtures written by scripts/run-e2e.sh
+# per-run raw results and history (results.json, baseline.json and report.html are kept)
+test-results/raw/
+test-results/history/
+# per-run test users and fixtures written by scripts/run-all-tests.sh
 .e2e-run/
 e2e/.auth/
 e2e/test-results/

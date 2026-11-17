@@ -1,0 +1,197 @@
+# TEST-ONLY backend stack (project "myfoodapp-apitest"). Never touches the
+# real stack: its own throwaway Postgres (tmpfs, restored from a pg_dump of the
+# real database by scripts/apitest-stack.sh), its own image storage, a fake
+# mail server, and fault-injection proxies in front of Open Food Facts and
+# OpenAI. Runs the unchanged backend image (myfoodapp-api:local).
+#
+#   ./scripts/apitest-stack.sh up      # create, seed and start
+#   ./scripts/apitest-stack.sh down    # remove everything (volumes included)
+#
+# Ports (localhost only):
+#   9598  api-t     the API as deployed (rate limits on)
+#   9599  api-perf  the same API with RATE_LIMIT=off, for speed sampling only
+#   4201  web-t     this web app pointed at api-t
+#   8025  mailpit   inbox for verification / reset emails
+
+name: myfoodapp-apitest
+
+x-api: &api
+  image: myfoodapp-api:local
+  command: ["node", "server.js"]
+  env_file:
+    - path: ../api_myfoodproductapp/.env
+      required: true
+    # OpenAI key for the fallback / photo analysis (absent = AI off)
+    - path: ../openai-test.env
+      required: false
+  extra_hosts:
+    # Open Food Facts and OpenAI go through toxiproxy (TLS passes through
+    # untouched), so tests can make them slow, cut or down on purpose
+    - "us.openfoodfacts.org:10.231.0.10"
+    - "api.openai.com:10.231.0.11"
+  volumes:
+    - uploads_t:/app/uploads
+    - certs:/certs:ro
+  depends_on:
+    db-t:
+      condition: service_healthy
+    mailpit:
+      condition: service_started
+    tox-off:
+      condition: service_started
+    tox-ai:
+      condition: service_started
+
+x-api-env: &api-env
+  DB_HOST: db-t
+  DB_PORT: "5432"
+  DB_NAME: myfoodapp
+  DB_USER: postgres
+  DB_PASSWORD: postgres
+  DB_SSL: "false"
+  DB_AUTO_CREATE: "false"
+  MEDIA_CLEANUP: "off"
+  CORS_ORIGINS: ""
+  SMTP_HOST: mailpit
+  SMTP_PORT: "1025"
+  SMTP_USER: tester
+  SMTP_PASS: tester
+  SMTP_FROM: "My Food App tests <tests@example.test>"
+  NODE_EXTRA_CA_CERTS: /certs/mailpit.crt
+  USDA_FDC_API_KEY: ""
+  ANTHROPIC_API_KEY: ""
+  AI_LOOKUP_PROVIDER: openai
+  AI_LOOKUP_CONCURRENCY: "1"
+
+services:
+  certs:
+    image: alpine:3.20
+    command:
+      - sh
+      - -c
+      - >-
+        [ -s /certs/mailpit.crt ] || (apk add --no-cache openssl >/dev/null &&
+        openssl req -x509 -newkey rsa:2048 -nodes -days 3 -subj /CN=mailpit
+        -addext subjectAltName=DNS:mailpit -keyout /certs/mailpit.key -out /certs/mailpit.crt 2>/dev/null &&
+        chmod 644 /certs/mailpit.key /certs/mailpit.crt)
+    volumes:
+      - certs:/certs
+
+  mailpit:
+    image: axllent/mailpit:v1.27
+    environment:
+      MP_SMTP_TLS_CERT: /certs/mailpit.crt
+      MP_SMTP_TLS_KEY: /certs/mailpit.key
+      MP_SMTP_AUTH_ACCEPT_ANY: "1"
+      MP_SMTP_AUTH_ALLOW_INSECURE: "1"
+      MP_MAX_MESSAGES: "500"
+    volumes:
+      - certs:/certs:ro
+    depends_on:
+      certs:
+        condition: service_completed_successfully
+    ports:
+      - "127.0.0.1:8025:8025"
+    networks:
+      apitest:
+        ipv4_address: 10.231.0.20
+
+  db-t:
+    image: postgres:18
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: myfoodapp
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=en_US.UTF-8"
+    tmpfs:
+      - /var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d myfoodapp"]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+    networks:
+      apitest:
+        ipv4_address: 10.231.0.5
+
+  tox-off:
+    image: ghcr.io/shopify/toxiproxy:2.12.0
+    user: "0:0"
+    command: ["-host=0.0.0.0", "-config=/config/toxiproxy.json"]
+    volumes:
+      - ./testing/toxiproxy/off.json:/config/toxiproxy.json:ro
+    networks:
+      apitest:
+        ipv4_address: 10.231.0.10
+
+  tox-ai:
+    image: ghcr.io/shopify/toxiproxy:2.12.0
+    user: "0:0"
+    command: ["-host=0.0.0.0", "-config=/config/toxiproxy.json"]
+    volumes:
+      - ./testing/toxiproxy/openai.json:/config/toxiproxy.json:ro
+    networks:
+      apitest:
+        ipv4_address: 10.231.0.11
+
+  api-t:
+    <<: *api
+    environment:
+      <<: *api-env
+      BASE_URL: http://localhost:9598
+      # hard cost caps for a whole run (the budget is per instance, per day)
+      AI_LOOKUP_MAX_PER_DAY: "14"
+      AI_LOOKUP_MAX_PER_USER_PER_DAY: "14"
+    ports:
+      - "127.0.0.1:9598:9595"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:9595/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 3s
+      timeout: 5s
+      retries: 30
+    networks:
+      apitest:
+        ipv4_address: 10.231.0.30
+
+  api-perf:
+    <<: *api
+    environment:
+      <<: *api-env
+      BASE_URL: http://localhost:9599
+      # speed sampling only: the rate limits themselves are tested on api-t
+      RATE_LIMIT: "off"
+      AI_LOOKUP_MAX_PER_DAY: "3"
+      AI_LOOKUP_MAX_PER_USER_PER_DAY: "3"
+    ports:
+      - "127.0.0.1:9599:9595"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:9595/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 3s
+      timeout: 5s
+      retries: 30
+    networks:
+      apitest:
+        ipv4_address: 10.231.0.31
+
+  web-t:
+    image: myfoodapp-sample-frontend:local
+    environment:
+      API_BASE_URL: http://api-t:9595
+    ports:
+      - "127.0.0.1:4201:80"
+    volumes:
+      - ./test-results:/usr/share/nginx/test-results:ro
+    networks:
+      apitest:
+        ipv4_address: 10.231.0.40
+
+volumes:
+  uploads_t:
+  certs:
+
+networks:
+  apitest:
+    name: myfoodapp_apitest
+    ipam:
+      config:
+        - subnet: 10.231.0.0/24

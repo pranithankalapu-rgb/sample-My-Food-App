@@ -1,0 +1,717 @@
+{
+  "meta": {
+    "title": "My Food App API inventory",
+    "backendRepo": "api_myfoodproductapp",
+    "backendCommit": "eb7971e68f08642789e5d6f4a354469f0a061cb6",
+    "generatedAt": "2026-11-17",
+    "sources": [
+      "lib/app.js (app-level routes: /health, /uploads static, JSON 404 and error handler)",
+      "lib/routes.js -> lib/api/content/index.js (every router registration)",
+      "lib/middleware/{authToken,authorize,rateLimit,validate,routeValidators}.js",
+      "lib/api/content/**/*Ops.js, userVerification.js, scanQuota.js",
+      "lib/api/utils/{scanUpload,uploadConfig}.js, lib/responseHandler.js"
+    ],
+    "swagger": "none (no OpenAPI/Swagger file in the backend)",
+    "registrationCount": { "router": 31, "app": 2, "total": 33 },
+    "auth": {
+      "token": "HS256 JWT in 'x-access-token' or 'Authorization: Bearer <token>'. Body/query tokens only when ALLOW_LEGACY_TOKEN_LOCATIONS is on.",
+      "levels": {
+        "none": "public",
+        "user": "any valid token (verifyToken also rejects deleted/disabled users and revoked token_version)",
+        "self_or_admin": "valid token AND (the :id in the path is the caller, or the caller is an active admin; role read from the DB)",
+        "admin": "valid token AND caller is an active admin (role read from the DB)"
+      }
+    },
+    "commonErrors": {
+      "validation": { "status": 400, "body": { "error": "Bad Request", "message": "Please check the request inputs", "details": "<joined Joi messages>" } },
+      "noToken": { "status": 403, "body": { "status": 403, "message": "A token is required for authentication" } },
+      "badToken": { "status": 401, "body": { "status": 401, "message": "Invalid Token" } },
+      "forbidden": { "status": 403, "body": { "status": 403, "message": "Access forbidden." } },
+      "rateLimited": { "status": 429, "body": { "status": 429, "message": "Too many requests. Please try again later." }, "headers": "RateLimit, RateLimit-Policy (draft-7)" },
+      "scanLimit": { "status": 403, "body": { "message": "Scan limit exceeded. Please subscribe.", "info": { "total_scans": 100, "scanned_count": 100, "remaining_scans": 0 } } },
+      "bodyParse": { "status": 400, "body": { "status": 400, "message": "The request body is not valid JSON." } },
+      "notFoundRoute": { "status": 404, "body": { "status": 404, "message": "Not found." } },
+      "server": { "status": 500, "body": "{ message: \"Internal Server Error\" } or { status: 500, message: \"Internal server error.\" } (varies per handler)" }
+    },
+    "errorFormatNote": "There is no single error format: validation uses {error, message, details}; auth and legacy handlers use {status, message}; product/OCR handlers use {message} or {error}; identifiers uses {status: \"error\", message}."
+  },
+  "endpoints": [
+    {
+      "id": "health",
+      "group": "System",
+      "method": "GET",
+      "path": "/health",
+      "auth": "none",
+      "rateLimit": null,
+      "params": [], "query": [], "body": [],
+      "responses": [
+        { "status": 200, "when": "always (static; does not check the database)", "body": { "status": "ok" } }
+      ],
+      "dataSource": ["none"],
+      "purpose": "Liveness probe used by Docker healthchecks. Not logged.",
+      "example": {},
+      "coverage": { "webApp": [], "webAppTests": ["e2e 01-health: 200 {status:ok}, also via /api proxy"], "backendTests": ["security.test.js"] }
+    },
+    {
+      "id": "uploads.static",
+      "group": "System",
+      "method": "GET",
+      "path": "/uploads/images/{file}",
+      "auth": "none",
+      "rateLimit": null,
+      "params": [{ "name": "file", "in": "path", "type": "string", "required": true, "rules": "stored file name, e.g. off_<code>_front_<hash>.jpg or <ts>-<hex>.jpg; dotfiles denied, no directory index" }],
+      "query": [], "body": [],
+      "responses": [
+        { "status": 200, "when": "file exists", "body": "image bytes (image/jpeg, image/png, image/webp, image/gif, image/heic); Cross-Origin-Resource-Policy: cross-origin" },
+        { "status": 404, "when": "no such file", "body": { "status": 404, "message": "Not found." } }
+      ],
+      "dataSource": ["disk (uploads volume)"],
+      "purpose": "Serves product images (Open Food Facts copies and CMS uploads). Product responses carry absolute URLs: <BASE_URL>/uploads/images/<file>.",
+      "example": { "params": { "file": "off_8715700407760_front_88f5f9b85095580b.jpg" } },
+      "coverage": { "webApp": ["Product detail (front image)", "Browse & search (thumbnails)"], "webAppTests": ["e2e 02-lookup/04-search: 200 image bytes", "e2e 08-data-integrity: all 399 files"], "backendTests": ["product.test.js"] }
+    },
+    {
+      "id": "auth.signup",
+      "group": "Auth",
+      "method": "POST",
+      "path": "/user",
+      "auth": "none",
+      "rateLimit": "20/hour per IP",
+      "params": [], "query": [],
+      "body": [
+        { "name": "first_name", "type": "string", "required": true, "rules": "<=100, letters/marks then letters, space . ' -" },
+        { "name": "last_name", "type": "string", "required": true, "rules": "same as first_name" },
+        { "name": "email", "type": "string", "required": true, "rules": "email, <=254, ASCII only, TLD not checked" },
+        { "name": "password", "type": "string", "required": true, "rules": "8-128 chars" },
+        { "name": "repassword", "type": "string", "required": true, "rules": "must equal password" },
+        { "name": "mobile", "type": "number", "required": false },
+        { "name": "role", "type": "any", "required": false, "rules": "accepted and stripped; never client-assigned" }
+      ],
+      "responses": [
+        { "status": 201, "when": "created", "body": { "status": 201, "message": "User created successfully.", "user": "<public user: id, first_name, last_name, email, role:'user', email_verification_status:'PENDING', is_active, user_scan_count, ...>" } },
+        { "status": 400, "when": "missing/invalid fields, passwords differ, or email already in use", "body": { "status": 400, "message": "Email already in use. | Password and Re-entered password must match. | ..." } },
+        { "status": 429, "when": "rate limited" }
+      ],
+      "dataSource": ["DB"],
+      "purpose": "Create an account. Email verification is not required to log in.",
+      "example": { "body": { "first_name": "Ada", "last_name": "Tester", "email": "e2e-ada@example.test", "password": "Str0ng-pass!", "repassword": "Str0ng-pass!" } },
+      "coverage": { "webApp": ["Login / Sign up"], "webAppTests": ["e2e 06-auth: 201 via UI"], "backendTests": ["hardening", "round3", "round4", "security"] }
+    },
+    {
+      "id": "auth.login",
+      "group": "Auth",
+      "method": "POST",
+      "path": "/login",
+      "auth": "none",
+      "rateLimit": "30/min per IP; failed logins 100/15 min per IP and 10/15 min per email+IP",
+      "params": [], "query": [],
+      "body": [
+        { "name": "email", "type": "string", "required": true, "rules": "<=254" },
+        { "name": "password", "type": "string", "required": true, "rules": "<=128" }
+      ],
+      "responses": [
+        { "status": 200, "when": "credentials match", "body": { "status": 200, "message": "Login successful.", "user": "<public user>", "token": "<JWT>" } },
+        { "status": 401, "when": "wrong password", "body": { "status": 401, "message": "Invalid email or password." } },
+        { "status": 403, "when": "account disabled (after a correct password)", "body": { "status": 403, "message": "Account disabled." } },
+        { "status": 404, "when": "unknown email (kept for older app builds)", "body": { "status": 404, "message": "User not found." } }
+      ],
+      "dataSource": ["DB"],
+      "purpose": "Password login for app users (and admins).",
+      "example": { "body": { "email": "e2e-ada@example.test", "password": "Str0ng-pass!" } },
+      "coverage": { "webApp": ["Login / Sign up"], "webAppTests": ["e2e auth.setup + 06-auth: 200, 401 wrong password, 404 deleted user"], "backendTests": ["hardening", "round3", "round5", "round6", "security"] }
+    },
+    {
+      "id": "auth.social",
+      "group": "Auth",
+      "method": "POST",
+      "path": "/user/social/signin",
+      "auth": "none",
+      "rateLimit": "60/15 min per IP",
+      "params": [], "query": [],
+      "body": [
+        { "name": "token", "type": "string", "required": true, "rules": "Firebase ID token, <=8192" },
+        { "name": "provider", "type": "string", "required": true, "rules": "<=32 (google, apple, facebook)" }
+      ],
+      "responses": [
+        { "status": 200, "when": "token verified", "body": { "status": 200, "message": "SignIn successful.", "user": "<public user>", "token": "<JWT>" } },
+        { "status": 400, "when": "missing token/provider" },
+        { "status": 401, "when": "invalid Firebase token", "body": { "status": 401, "message": "Invalid Firebase token." } },
+        { "status": 403, "when": "account disabled" },
+        { "status": 409, "when": "email has a password account / concurrent first sign-in" }
+      ],
+      "dataSource": ["Firebase", "DB"],
+      "purpose": "Sign in with Google/Apple/Facebook via Firebase. FIREBASE_SERVICE_ACCOUNT is not set locally, so only error paths can be exercised here.",
+      "example": { "body": { "token": "<firebase-id-token>", "provider": "google" } },
+      "coverage": { "webApp": [], "webAppTests": [], "backendTests": ["hardening", "round3", "round4", "round6", "security"] }
+    },
+    {
+      "id": "auth.sendVerificationCode",
+      "group": "Auth",
+      "method": "POST",
+      "path": "/user/verify/code",
+      "auth": "none",
+      "rateLimit": "20/hour per IP, 5/hour per email+IP, 50/day per email",
+      "params": [], "query": [],
+      "body": [{ "name": "email", "type": "string", "required": true, "rules": "<=254" }],
+      "responses": [
+        { "status": 200, "when": "always for a well-formed email (same answer for unknown, verified or pending accounts)", "body": { "message": "Verification code sent successfully." } },
+        { "status": 500, "when": "unexpected error" }
+      ],
+      "dataSource": ["DB", "SMTP"],
+      "purpose": "Email a 6-digit account verification code (only to PENDING accounts; re-sends the active code).",
+      "example": { "body": { "email": "e2e-ada@example.test" } },
+      "coverage": { "webApp": [], "webAppTests": [], "backendTests": ["round4", "security"] }
+    },
+    {
+      "id": "auth.verify",
+      "group": "Auth",
+      "method": "POST",
+      "path": "/user/verify",
+      "auth": "none",
+      "rateLimit": "30/15 min per IP, 10/15 min per email+IP; 5 wrong guesses per network, 15 per code, 30/day per email",
+      "params": [], "query": [],
+      "body": [
+        { "name": "email", "type": "string", "required": true, "rules": "<=254" },
+        { "name": "code", "type": "string", "required": true, "rules": "<=16" }
+      ],
+      "responses": [
+        { "status": 200, "when": "code valid", "body": { "status": "success", "message": "User verification successful" } },
+        { "status": 401, "when": "wrong/expired code", "body": { "status": "error", "message": "Verification details not found" } },
+        { "status": 500, "when": "could not mark verified" }
+      ],
+      "dataSource": ["DB"],
+      "purpose": "Confirm the email address with the emailed code.",
+      "example": { "body": { "email": "e2e-ada@example.test", "code": "123456" } },
+      "coverage": { "webApp": [], "webAppTests": [], "backendTests": ["security"] }
+    },
+    {
+      "id": "auth.forgotPasswordCode",
+      "group": "Auth",
+      "method": "POST",
+      "path": "/user/forgotpassword/code",
+      "auth": "none",
+      "rateLimit": "20/hour per IP, 5/hour per email+IP, 50/day per email",
+      "params": [], "query": [],
+      "body": [{ "name": "email", "type": "string", "required": true, "rules": "<=254" }],
+      "responses": [
+        { "status": 200, "when": "always for a well-formed email", "body": { "status": "success", "message": "Forgot password verification code sent successfully" } },
+        { "status": 500, "when": "unexpected error" }
+      ],
+      "dataSource": ["DB", "SMTP"],
+      "purpose": "Email a password-reset code.",
+      "example": { "body": { "email": "e2e-ada@example.test" } },
+      "coverage": { "webApp": [], "webAppTests": [], "backendTests": ["hardening", "round3", "round4", "round5", "security"] }
+    },
+    {
+      "id": "auth.changePassword",
+      "group": "Auth",
+      "method": "POST",
+      "path": "/user/changepassword",
+      "auth": "none",
+      "rateLimit": "30/15 min per IP, 10/15 min per email+IP",
+      "params": [], "query": [],
+      "body": [
+        { "name": "email", "type": "string", "required": true, "rules": "<=254" },
+        { "name": "code", "type": "string", "required": true, "rules": "<=16" },
+        { "name": "new_password", "type": "string", "required": true, "rules": "8-128" }
+      ],
+      "responses": [
+        { "status": 200, "when": "code valid; password changed, all sessions revoked", "body": { "status": 200, "message": "Password changed successfully" } },
+        { "status": 404, "when": "wrong/expired code or unknown email", "body": { "status": "error", "message": "Invalid email or verification code or code expired" } }
+      ],
+      "dataSource": ["DB"],
+      "purpose": "Reset the password with the emailed code (bumps token_version).",
+      "example": { "body": { "email": "e2e-ada@example.test", "code": "123456", "new_password": "N3w-pass-word!" } },
+      "coverage": { "webApp": [], "webAppTests": [], "backendTests": ["hardening", "round3", "round4", "round5", "security"] }
+    },
+    {
+      "id": "user.get",
+      "group": "User",
+      "method": "GET",
+      "path": "/user/{id}",
+      "auth": "self_or_admin",
+      "rateLimit": null,
+      "params": [{ "name": "id", "in": "path", "type": "uuid v4", "required": true }],
+      "query": [], "body": [],
+      "responses": [
+        { "status": 200, "when": "found", "body": { "status": 200, "user": "<public user + total_scan_limit, subscription_details[], active_subscription|null; user_info only for self>" } },
+        { "status": 404, "when": "no such user", "body": { "status": 404, "message": "User not found." } }
+      ],
+      "dataSource": ["DB"],
+      "purpose": "Profile, scan quota and subscriptions.",
+      "example": { "params": { "id": "<own user id>" } },
+      "coverage": { "webApp": [], "webAppTests": ["e2e 06-auth: 403 without token only"], "backendTests": ["hardening", "round3", "round4", "security"] }
+    },
+    {
+      "id": "user.update",
+      "group": "User",
+      "method": "PUT",
+      "path": "/user/{id}",
+      "auth": "self_or_admin",
+      "rateLimit": "30/min per user",
+      "params": [{ "name": "id", "in": "path", "type": "uuid v4", "required": true }],
+      "query": [],
+      "body": [{ "name": "user_info", "type": "object", "required": true, "rules": "health profile; health_conditions/allergies/allergens: string[] (<=50 items, <=100 chars); other keys allowed; whole object <=16 KB; merged into the stored object" }],
+      "responses": [
+        { "status": 200, "when": "merged", "body": { "status": 200, "message": "User details updated successfully." } },
+        { "status": 400, "when": "profile too large after merge", "body": { "status": 400, "message": "Profile is too large." } },
+        { "status": 404, "when": "no such user" }
+      ],
+      "dataSource": ["DB"],
+      "purpose": "Save the health profile used for personal verdicts.",
+      "example": { "params": { "id": "<own user id>" }, "body": { "user_info": { "health_conditions": ["diabetes"], "allergies": ["peanuts"] } } },
+      "coverage": { "webApp": [], "webAppTests": [], "backendTests": ["hardening", "round4", "security"] }
+    },
+    {
+      "id": "user.delete",
+      "group": "User",
+      "method": "DELETE",
+      "path": "/user/{id}",
+      "auth": "self_or_admin",
+      "rateLimit": null,
+      "params": [{ "name": "id", "in": "path", "type": "uuid v4", "required": true }],
+      "query": [], "body": [],
+      "responses": [
+        { "status": 200, "when": "erased (soft delete: personal data cleared, email freed, tokens revoked, history removed)", "body": { "status": 200, "message": "User deleted successfully." } },
+        { "status": 404, "when": "no such user" }
+      ],
+      "dataSource": ["DB"],
+      "purpose": "Account deletion.",
+      "example": { "params": { "id": "<own user id>" } },
+      "coverage": { "webApp": [], "webAppTests": ["e2e 06-auth: 200, token revoked afterwards"], "backendTests": ["hardening", "round4", "security"] }
+    },
+    {
+      "id": "user.incrementScan",
+      "group": "User",
+      "method": "PUT",
+      "path": "/user/{id}/increment-scan",
+      "auth": "self_or_admin",
+      "rateLimit": null,
+      "params": [{ "name": "id", "in": "path", "type": "uuid v4", "required": true }],
+      "query": [], "body": [],
+      "responses": [
+        { "status": 200, "when": "quota left (or the limit was reached by a scan in the last 120 s)", "body": { "message": "Scan recorded successfully.", "info": { "total_scans": 100, "scanned_count": 3, "remaining_scans": 97 } } },
+        { "status": 403, "when": "over the free limit", "body": { "message": "Scan limit exceeded. Please subscribe.", "info": "..." } }
+      ],
+      "dataSource": ["DB"],
+      "purpose": "Legacy: reports the scan quota. Scans are counted by the lookup itself; this never counts one.",
+      "example": { "params": { "id": "<own user id>" } },
+      "coverage": { "webApp": [], "webAppTests": [], "backendTests": ["hardening", "round5", "security"] }
+    },
+    {
+      "id": "user.history",
+      "group": "User",
+      "method": "GET",
+      "path": "/product/history/user/{id}",
+      "auth": "self_or_admin",
+      "rateLimit": null,
+      "params": [{ "name": "id", "in": "path", "type": "uuid v4", "required": true }],
+      "query": [], "body": [],
+      "responses": [
+        { "status": 200, "when": "always", "body": { "productHistory": "[{ id, product_code, user_id, product_name, created_at, updated_at }] newest first, max 500" } }
+      ],
+      "dataSource": ["DB"],
+      "purpose": "The user's recently scanned products (admins are never recorded).",
+      "example": { "params": { "id": "<own user id>" } },
+      "coverage": { "webApp": [], "webAppTests": ["e2e 06-auth: 403 without token only"], "backendTests": ["product", "security"] }
+    },
+    {
+      "id": "product.lookup",
+      "group": "Product",
+      "method": "GET",
+      "path": "/product/{code}",
+      "auth": "user",
+      "rateLimit": "120/min per user; Open Food Facts share 10/min per user, 80/min per server",
+      "params": [{ "name": "code", "in": "path", "type": "string", "required": true, "rules": "^[A-Za-z0-9._-]{1,64}$ (no check-digit validation)" }],
+      "query": [], "body": [],
+      "responses": [
+        { "status": 200, "when": "found in DB, on Open Food Facts, or by the fallback", "body": { "product": "<productdetails row + isRecommended { recommended: boolean, verdict: 'recommended'|'not_recommended'|'insufficient_data', report, missing_data, unsupported_conditions? }, defaults for missing fields, selected_images (uploaded_images with absolute URLs), image_url, image_thumb_url, image_width, image_height, image_source, image_chosen_by, needs_better_image, data_source, source_info>" } },
+        { "status": 403, "when": "scan limit reached (non-admin)", "body": { "message": "Scan limit exceeded. Please subscribe.", "info": "..." } },
+        { "status": 404, "when": "not on Open Food Facts and the fallback found nothing (or is disabled)", "body": { "message": "Product not found in external API." } },
+        { "status": 404, "when": "fallback still running after FALLBACK_WAIT_MS (25 s)", "body": { "message": "We are still looking this product up. Please try again in a minute.", "lookup_pending": true }, "headers": "Retry-After: 30" },
+        { "status": 429, "when": "per-user Open Food Facts share used up", "headers": "Retry-After: 60" },
+        { "status": 503, "when": "Open Food Facts unreachable/timeout (8 s)", "body": { "message": "Product data is temporarily unavailable. Please try again." }, "headers": "Retry-After: 30" }
+      ],
+      "dataSource": ["DB", "Open Food Facts", "USDA (off: no key)", "OpenAI (AI_LOOKUP_PROVIDER=openai)"],
+      "purpose": "Barcode scan: DB first, then Open Food Facts (stored), then fallbacks (stored). Counts a scan (free re-open within 10 min), writes history, scores against the user's profile.",
+      "example": { "params": { "code": "8715700407760" } },
+      "coverage": { "webApp": ["Barcode lookup", "Product detail"], "webAppTests": ["e2e 02-lookup: 10 random x2 phases", "e2e 03: unknown barcode -> 404"], "backendTests": ["fallback", "hardening", "images", "product", "productBundle", "round3", "round4", "round5"] }
+    },
+    {
+      "id": "product.list",
+      "group": "Product",
+      "method": "GET",
+      "path": "/product",
+      "auth": "user",
+      "rateLimit": "60/min per user",
+      "params": [],
+      "query": [
+        { "name": "page", "type": "integer", "required": true, "rules": ">=0 (0 treated as 1), clamped to 500" },
+        { "name": "limit", "type": "integer", "required": true, "rules": ">=1, clamped to 100" }
+      ],
+      "body": [],
+      "responses": [
+        { "status": 200, "when": "page has rows", "body": { "data": "[listing rows with image fields]", "pageInfo": { "total": 103, "page": 1, "pages": 9 } } },
+        { "status": 404, "when": "page beyond the last", "body": { "message": "No products found" } }
+      ],
+      "dataSource": ["DB (products listing, cached)"],
+      "purpose": "Browse the catalogue page by page.",
+      "example": { "query": { "page": 1, "limit": 12 } },
+      "coverage": { "webApp": [], "webAppTests": [], "backendTests": ["hardening", "product", "round3"] }
+    },
+    {
+      "id": "product.search",
+      "group": "Product",
+      "method": "POST",
+      "path": "/product/search",
+      "auth": "user",
+      "rateLimit": "60/min per user",
+      "params": [], "query": [],
+      "body": [
+        { "name": "query", "type": "string|null", "required": false, "rules": "<=2000, cut to 200; full-text (plainto_tsquery english)" },
+        { "name": "filters", "type": "array", "required": false, "rules": "<=10 of {name, value: string|string[]}; honoured names: product_name (exact), categories, additives_tags, countries (array overlap)" },
+        { "name": "page", "type": "integer", "required": false, "rules": "0-based, clamped to 500" },
+        { "name": "page_size", "type": "integer", "required": false, "rules": "default 10, clamped to 100" }
+      ],
+      "responses": [
+        { "status": 200, "when": "always (empty results allowed)", "body": { "page_no": 0, "pageSize": 12, "totalSearchResultsCount": "\"103\" (string; capped for filtered searches)", "results": "[id, code, product_name, categories, additives_tags, countries, selected_images, image fields, ...]" } }
+      ],
+      "dataSource": ["DB (products listing, full-text index, cached)"],
+      "purpose": "Search and filter the catalogue. No brands in results.",
+      "example": { "body": { "query": "ketchup", "filters": [], "page": 0, "page_size": 12 } },
+      "coverage": { "webApp": ["Browse & search"], "webAppTests": ["e2e 04-search: browse, pages 1/2/last, by name, empty"], "backendTests": ["hardening", "product", "round5"] }
+    },
+    {
+      "id": "product.byCategory",
+      "group": "Product",
+      "method": "POST",
+      "path": "/product/category",
+      "auth": "user",
+      "rateLimit": "60/min per user",
+      "params": [], "query": [],
+      "body": [{ "name": "category", "type": "string[]", "required": true, "rules": "<=50 items, <=500 chars each; matched against listing categories (overlap)" }],
+      "responses": [
+        { "status": 200, "when": "matches", "body": { "data": "[raw listing rows, max 100, no image URL fields]" } },
+        { "status": 404, "when": "no match", "body": { "message": "No products found for category: <list>" } }
+      ],
+      "dataSource": ["DB"],
+      "purpose": "Products in any of the given categories.",
+      "example": { "body": { "category": ["Sauces"] } },
+      "coverage": { "webApp": [], "webAppTests": [], "backendTests": [] }
+    },
+    {
+      "id": "product.byAdditives",
+      "group": "Product",
+      "method": "POST",
+      "path": "/product/additives",
+      "auth": "user",
+      "rateLimit": "60/min per user",
+      "params": [], "query": [],
+      "body": [{ "name": "additives_tags", "type": "string[]", "required": true, "rules": "<=50 items, <=500 chars each (e.g. en:e330)" }],
+      "responses": [
+        { "status": 200, "when": "matches", "body": { "data": "[raw listing rows, max 100]" } },
+        { "status": 404, "when": "no match", "body": { "message": "No products found with additives tag: <list>" } }
+      ],
+      "dataSource": ["DB"],
+      "purpose": "Products containing any of the given additives.",
+      "example": { "body": { "additives_tags": ["en:e330"] } },
+      "coverage": { "webApp": [], "webAppTests": [], "backendTests": [] }
+    },
+    {
+      "id": "product.scanLabel",
+      "group": "Product",
+      "method": "POST",
+      "path": "/product/scan",
+      "auth": "user",
+      "rateLimit": "20/min per user; scan quota; max 2 in flight per user, 4 per network, 16 total",
+      "contentType": "multipart/form-data",
+      "params": [], "query": [],
+      "body": [{ "name": "images", "type": "file", "required": true, "rules": "one JPEG/PNG/WebP/HEIC (magic bytes checked), <=10 MB, upload deadline 120 s" }],
+      "responses": [
+        { "status": 200, "when": "OCR service answered", "body": { "ocrData": "<OCR service response, passed through>" } },
+        { "status": 400, "when": "no file / not an image / too large", "body": { "error": "No image file uploaded | The file is not a JPEG, PNG, WebP or HEIC image | Image is too large (10 MB maximum)." } },
+        { "status": 403, "when": "scan limit reached" },
+        { "status": 408, "when": "upload slower than 120 s" },
+        { "status": 500, "when": "OCR service failed or unreachable (scan refunded)", "body": { "error": "OCR failed" } },
+        { "status": 503, "when": "too many scans in flight", "headers": "Retry-After: 5" }
+      ],
+      "dataSource": ["OCR service (ocr.findmyproductapp.com)"],
+      "purpose": "Read a food label photo. Sends the image and the user's user_info to the OCR service (30 s timeout).",
+      "example": { "body": { "images": "<label.jpg>" } },
+      "coverage": { "webApp": ["Label scan"], "webAppTests": ["e2e 05-label-scan: upload (fails: OCR service down), no-file message"], "backendTests": ["product", "round3", "round4"] }
+    },
+    {
+      "id": "product.analyzePhoto",
+      "group": "Product",
+      "method": "POST",
+      "path": "/product/analyze",
+      "auth": "user",
+      "rateLimit": "20/min per user; scan quota; AI budgets (500/day server, 20/day user, 4 concurrent)",
+      "contentType": "multipart/form-data",
+      "params": [], "query": [],
+      "body": [{ "name": "images", "type": "file", "required": true, "rules": "one JPEG/PNG/WebP, <=10 MB" }],
+      "responses": [
+        { "status": 200, "when": "food recognised", "body": { "report": "{ is_food, kind, confidence, name, brand, description, barcode, known_product, items, categories, is_drink, quantity, ingredients{text,source}, allergens{contains,may_contain}, nutrition{basis,source,values,serving}, nova_group, additives, health_notes, safety_notes, verdict { recommended, verdict, report, missing_data }, disclaimer }", "model": "<model id>" } },
+        { "status": 200, "when": "not food", "body": { "report": { "is_food": false, "kind": "not_food", "description": "...", "disclaimer": "..." } } },
+        { "status": 400, "when": "no file / not JPEG, PNG or WebP" },
+        { "status": 422, "when": "AI returned no usable analysis (refunded)" },
+        { "status": 429, "when": "AI budget used up (refunded)", "headers": "Retry-After: 60" },
+        { "status": 503, "when": "no OpenAI key, or OpenAI failed/timeout 60 s (refunded)" }
+      ],
+      "dataSource": ["OpenAI (Responses API)"],
+      "purpose": "AI report for a photo of any food; the verdict is scored on the server, never by the AI. Nothing is stored.",
+      "example": { "body": { "images": "<photo.jpg>" } },
+      "coverage": { "webApp": [], "webAppTests": [], "backendTests": ["fallback"] }
+    },
+    {
+      "id": "cms.login",
+      "group": "Admin",
+      "method": "POST",
+      "path": "/cms/login",
+      "auth": "none",
+      "rateLimit": "same as /login",
+      "params": [], "query": [],
+      "body": [
+        { "name": "email", "type": "string", "required": true, "rules": "<=254" },
+        { "name": "password", "type": "string", "required": true, "rules": "<=128" }
+      ],
+      "responses": [
+        { "status": 200, "when": "active admin", "body": { "status": 200, "message": "Login successful.", "user": "<public user>", "token": "<short-lived JWT>" } },
+        { "status": 401, "when": "any failure (unknown, wrong password, not admin, disabled: same answer)", "body": { "status": 401, "message": "Invalid email or password." } }
+      ],
+      "dataSource": ["DB"],
+      "purpose": "Admin login for the CMS (short token lifetime).",
+      "example": { "body": { "email": "e2e-admin@example.test", "password": "<password>" } },
+      "coverage": { "webApp": [], "webAppTests": ["e2e 07-cms: via the CMS UI"], "backendTests": ["hardening", "round4", "round6", "security"] }
+    },
+    {
+      "id": "cms.logout",
+      "group": "Admin",
+      "method": "POST",
+      "path": "/cms/logout",
+      "auth": "user",
+      "rateLimit": null,
+      "params": [], "query": [], "body": [],
+      "responses": [
+        { "status": 200, "when": "token_version bumped: every session of the caller ends", "body": { "status": 200, "message": "Logged out." } }
+      ],
+      "dataSource": ["DB"],
+      "purpose": "Server-side logout (any signed-in user, not only admins).",
+      "example": {},
+      "coverage": { "webApp": [], "webAppTests": [], "backendTests": ["round4"] }
+    },
+    {
+      "id": "cms.reviewQueue",
+      "group": "Admin",
+      "method": "GET",
+      "path": "/cms/product-review",
+      "auth": "admin",
+      "rateLimit": null,
+      "params": [],
+      "query": [
+        { "name": "page", "type": "integer", "required": false, "rules": "1-500, default 1" },
+        { "name": "limit", "type": "integer", "required": false, "rules": "1-100, default 20" }
+      ],
+      "body": [],
+      "responses": [
+        { "status": 200, "when": "always", "body": { "data": "[code, product_name, brands, data_source, source_info, selected_images, image fields, created_at, updated_at]", "pageInfo": { "total": 0, "page": 1, "pages": 0 } } }
+      ],
+      "dataSource": ["DB"],
+      "purpose": "Products filled in by USDA/AI that no admin has confirmed yet.",
+      "example": { "query": { "page": 1, "limit": 20 } },
+      "coverage": { "webApp": [], "webAppTests": [], "backendTests": ["fallback"] }
+    },
+    {
+      "id": "cms.imageQueue",
+      "group": "Admin",
+      "method": "GET",
+      "path": "/cms/product-images",
+      "auth": "admin",
+      "rateLimit": null,
+      "params": [],
+      "query": [
+        { "name": "page", "type": "integer", "required": false, "rules": "1-500, default 1" },
+        { "name": "limit", "type": "integer", "required": false, "rules": "1-100, default 20" }
+      ],
+      "body": [],
+      "responses": [
+        { "status": 200, "when": "always", "body": { "data": "[same shape as review queue]", "pageInfo": "{ total, page, pages }" } }
+      ],
+      "dataSource": ["DB"],
+      "purpose": "Products whose best image is below the quality threshold (smallest first).",
+      "example": { "query": { "page": 1, "limit": 20 } },
+      "coverage": { "webApp": [], "webAppTests": [], "backendTests": ["images"] }
+    },
+    {
+      "id": "admin.users",
+      "group": "Admin",
+      "method": "GET",
+      "path": "/users",
+      "auth": "admin",
+      "rateLimit": null,
+      "params": [],
+      "query": [
+        { "name": "page", "type": "integer", "required": false, "rules": "1-100000, default 1" },
+        { "name": "limit", "type": "integer", "required": false, "rules": "1-100, default 10" }
+      ],
+      "body": [],
+      "responses": [
+        { "status": 200, "when": "page has users", "body": { "status": 200, "data": "[users without password, social_token, user_info, token_version]", "pagination": { "totalUsers": 8, "currentPage": 1, "totalPages": 1 } } },
+        { "status": 404, "when": "no users on that page", "body": { "status": 404, "message": "No users found." } }
+      ],
+      "dataSource": ["DB"],
+      "purpose": "User management list for the CMS.",
+      "example": { "query": { "page": 1, "limit": 10 } },
+      "coverage": { "webApp": [], "webAppTests": [], "backendTests": ["hardening", "round4", "security"] }
+    },
+    {
+      "id": "admin.updateProduct",
+      "group": "Admin",
+      "method": "PUT",
+      "path": "/product/update",
+      "auth": "admin",
+      "rateLimit": null,
+      "params": [], "query": [],
+      "body": [
+        { "name": "product_code", "type": "string", "required": true, "rules": "^[A-Za-z0-9._-]{1,64}$" },
+        { "name": "product_details", "type": "object", "required": true, "rules": "known product fields only, type-coerced; product_name non-empty, <=500; body up to 2 MB" },
+        { "name": "expected_updated_at", "type": "ISO date", "required": false, "rules": "optimistic lock: 409 if the stored updatedAt differs" },
+        { "name": "mark_verified", "type": "boolean", "required": false, "rules": "confirms USDA/AI data (sets verified_at)" }
+      ],
+      "responses": [
+        { "status": 200, "when": "updated", "body": { "message": "Product details updated successfully!" } },
+        { "status": 201, "when": "created (data_source 'cms')", "body": { "message": "Product created successfully!" } },
+        { "status": 400, "when": "invalid field values / empty name", "body": { "message": "Some product fields have invalid values.", "fields": ["..."] } },
+        { "status": 409, "when": "stale expected_updated_at", "body": { "message": "This product was changed by someone else. Reload it and try again." } }
+      ],
+      "dataSource": ["DB"],
+      "purpose": "CMS edit/create of a product (also updates the listing row, clears caches).",
+      "example": { "body": { "product_code": "E2ETEST0001", "product_details": { "product_name": "E2E Test Product", "brands": "E2E" } } },
+      "coverage": { "webApp": [], "webAppTests": [], "backendTests": ["fallback", "images", "product", "productBundle", "round3", "round4", "round5", "security"] }
+    },
+    {
+      "id": "admin.deleteProduct",
+      "group": "Admin",
+      "method": "DELETE",
+      "path": "/product/{code}",
+      "auth": "admin",
+      "rateLimit": null,
+      "params": [{ "name": "code", "in": "path", "type": "string", "required": true, "rules": "^[A-Za-z0-9._-]{1,64}$" }],
+      "query": [], "body": [],
+      "responses": [
+        { "status": 200, "when": "removed from listing/search (soft delete; details kept, scans still work)", "body": { "message": "Product deleted Successfully" } },
+        { "status": 404, "when": "not listed", "body": { "message": "Product not found" } }
+      ],
+      "dataSource": ["DB"],
+      "purpose": "Remove a product from listings and search.",
+      "example": { "params": { "code": "E2ETEST0001" } },
+      "coverage": { "webApp": [], "webAppTests": [], "backendTests": ["product", "security"] }
+    },
+    {
+      "id": "admin.uploadMedia",
+      "group": "Admin",
+      "method": "POST",
+      "path": "/media/upload",
+      "auth": "admin",
+      "rateLimit": null,
+      "contentType": "multipart/form-data",
+      "params": [], "query": [],
+      "body": [
+        { "name": "images", "type": "file[]", "required": false, "rules": "<=10; JPEG/PNG/WebP/GIF/HEIC/HEIF (MIME + magic bytes)" },
+        { "name": "videos", "type": "file[]", "required": false, "rules": "<=5; MP4/MOV/WebM" },
+        { "name": "pdfs", "type": "file[]", "required": false, "rules": "<=5; PDF" }
+      ],
+      "responses": [
+        { "status": 201, "when": "stored", "body": { "uploadedFiles": "[{ file_id, url, mime_type, original_filename, width?, height? }]", "message": "Files uploaded successfully" } },
+        { "status": 400, "when": "wrong type / signature / too many", "body": { "success": false, "message": "File upload failed", "error": "<reason>" } }
+      ],
+      "dataSource": ["disk", "DB (mediafiles)"],
+      "purpose": "CMS uploads (images kept as uploaded; unused uploads are deleted after 24 h).",
+      "example": { "body": { "images": "<front.jpg>" } },
+      "coverage": { "webApp": [], "webAppTests": [], "backendTests": ["images", "product", "round3", "round4", "security"] }
+    },
+    {
+      "id": "admin.deleteMedia",
+      "group": "Admin",
+      "method": "DELETE",
+      "path": "/media/{id}",
+      "auth": "admin",
+      "rateLimit": null,
+      "params": [{ "name": "id", "in": "path", "type": "uuid", "required": true }],
+      "query": [], "body": [],
+      "responses": [
+        { "status": 200, "when": "record and file removed", "body": { "message": "Media file deleted successfully" } },
+        { "status": 404, "when": "no such file", "body": { "message": "File not found" } }
+      ],
+      "dataSource": ["DB", "disk"],
+      "purpose": "Delete an uploaded file (does not check whether a product still references it).",
+      "example": { "params": { "id": "<file_id from upload>" } },
+      "coverage": { "webApp": [], "webAppTests": [], "backendTests": ["product"] }
+    },
+    {
+      "id": "billing.add",
+      "group": "Billing",
+      "method": "POST",
+      "path": "/subscription/add",
+      "auth": "user",
+      "rateLimit": "10/min per user",
+      "params": [], "query": [],
+      "body": [
+        { "name": "from_date", "type": "ISO date", "required": true, "rules": "not more than 1 day in the past" },
+        { "name": "to_date", "type": "ISO date", "required": true, "rules": "> from_date, period <= 400 days" },
+        { "name": "payment_status", "type": "string", "required": true, "rules": "pending | completed | failed (trusted as sent while SUBSCRIPTION_VERIFICATION=client)" },
+        { "name": "transaction_id", "type": "string", "required": true, "rules": "<=255, unique" }
+      ],
+      "responses": [
+        { "status": 201, "when": "recorded", "body": { "message": "Subscription added successfully", "subscription": "<row>" } },
+        { "status": 400, "when": "invalid period", "body": { "message": "Invalid subscription period" } },
+        { "status": 409, "when": "already active / duplicate transaction_id" }
+      ],
+      "dataSource": ["DB"],
+      "purpose": "Record a purchase (ledger row).",
+      "example": { "body": { "from_date": "<now ISO>", "to_date": "<now+30d ISO>", "payment_status": "pending", "transaction_id": "e2e-<run>-1" } },
+      "coverage": { "webApp": [], "webAppTests": [], "backendTests": ["hardening", "security"] }
+    },
+    {
+      "id": "billing.extend",
+      "group": "Billing",
+      "method": "PUT",
+      "path": "/subscription/extend",
+      "auth": "user",
+      "rateLimit": "10/min per user",
+      "params": [], "query": [],
+      "body": [
+        { "name": "additional_days", "type": "integer", "required": true, "rules": "1-400" },
+        { "name": "payment_status", "type": "string", "required": true, "rules": "pending | completed | failed" },
+        { "name": "transaction_id", "type": "string", "required": true, "rules": "<=255, unique" }
+      ],
+      "responses": [
+        { "status": 200, "when": "paid extension of an active period", "body": { "message": "Subscription extended successfully", "new_end_date": "<ISO>" } },
+        { "status": 201, "when": "no active period (or not completed): new row", "body": { "message": "New subscription created successfully", "new_subscription": "<row>" } },
+        { "status": 400, "when": "period too long" },
+        { "status": 409, "when": "duplicate transaction_id" }
+      ],
+      "dataSource": ["DB"],
+      "purpose": "Extend from the current end date.",
+      "example": { "body": { "additional_days": 30, "payment_status": "pending", "transaction_id": "e2e-<run>-2" } },
+      "coverage": { "webApp": [], "webAppTests": [], "backendTests": ["hardening", "security"] }
+    },
+    {
+      "id": "billing.identifiers",
+      "group": "Billing",
+      "method": "GET",
+      "path": "/identifiers",
+      "auth": "none",
+      "rateLimit": null,
+      "params": [], "query": [], "body": [],
+      "responses": [
+        { "status": 200, "when": "always", "body": { "identifiers": "[{ id, identifier: 'com.myfoodapp.tierN', price, created_at, updated_at, deleted_at }]" } },
+        { "status": 500, "when": "DB error", "body": { "status": "error", "message": "Internal server error" } }
+      ],
+      "dataSource": ["DB"],
+      "purpose": "In-app purchase product identifiers and prices.",
+      "example": {},
+      "coverage": { "webApp": [], "webAppTests": [], "backendTests": [] }
+    }
+  ]
+}

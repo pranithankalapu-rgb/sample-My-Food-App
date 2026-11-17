@@ -1,0 +1,8 @@
+[
+  {
+    "name": "off",
+    "listen": "0.0.0.0:443",
+    "upstream": "us.openfoodfacts.org:443",
+    "enabled": true
+  }
+]

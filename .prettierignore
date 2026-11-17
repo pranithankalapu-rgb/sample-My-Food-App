@@ -1,0 +1,9 @@
+dist
+node_modules
+e2e-report
+test-results
+docs
+package-lock.json
+e2e/package-lock.json
+src/data/api-inventory.json
+*.md

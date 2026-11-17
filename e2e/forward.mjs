@@ -13,13 +13,20 @@ const routes = [
   [4200, target(process.env.WEB_TARGET || "web:80")],
   [9595, target(process.env.API_TARGET || "api:9595")],
   [3000, target(process.env.CMS_TARGET || "cms:3000")],
+  // test-only stack (docker-compose.apitest.yml)
+  [4201, target(process.env.WEB_T_TARGET || "web-t:80")],
+  [9598, target(process.env.API_T_TARGET || "api-t:9595")],
+  [8025, target(process.env.MAILPIT_TARGET || "mailpit:8025")],
 ];
 
 function handler(to) {
   return (client) => {
     const upstream = net.connect(to.port, to.host);
     client.pipe(upstream).pipe(client);
-    const close = () => { client.destroy(); upstream.destroy(); };
+    const close = () => {
+      client.destroy();
+      upstream.destroy();
+    };
     client.on("error", close);
     upstream.on("error", close);
   };
@@ -30,5 +37,8 @@ for (const [localPort, to] of routes) {
     console.log(`[forward] localhost:${localPort} -> ${to.host}:${to.port}`);
   });
   // "localhost" may resolve to ::1; containers without IPv6 just skip this
-  net.createServer(handler(to)).on("error", () => {}).listen(localPort, "::1");
+  net
+    .createServer(handler(to))
+    .on("error", () => {})
+    .listen(localPort, "::1");
 }

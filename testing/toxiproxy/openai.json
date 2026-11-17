@@ -1,0 +1,8 @@
+[
+  {
+    "name": "openai",
+    "listen": "0.0.0.0:443",
+    "upstream": "api.openai.com:443",
+    "enabled": true
+  }
+]

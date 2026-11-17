@@ -7,13 +7,17 @@ server {
   listen 80;
   server_name _;
   root /usr/share/nginx/html;
+  server_tokens off;
 
-  # resolve the API's service name at request time (Docker's DNS), so this
-  # container starts even when the backend is down and follows API restarts
+  # resolve the API's service name (and external hosts) at request time, so
+  # this container starts even when the backend is down and follows restarts
   resolver 127.0.0.11 valid=10s ipv6=off;
   set $api_base ${API_BASE_URL};
 
-  client_max_body_size 12m;
+  client_max_body_size 52m;
+
+  add_header X-Content-Type-Options nosniff always;
+  add_header Referrer-Policy strict-origin-when-cross-origin always;
 
   location = /healthz {
     default_type text/plain;
@@ -29,7 +33,43 @@ server {
     proxy_set_header X-Forwarded-Proto $scheme;
     # unknown barcodes wait for Open Food Facts + the AI fallback; OCR up to 30 s
     proxy_read_timeout 90s;
-    proxy_intercept_errors off;
+    proxy_request_buffering off;
+  }
+
+  # ---- status probes (Status page): reachability from this container ----
+  location = /probe/off {
+    set $off_url https://world.openfoodfacts.org/api/v2/product/3017624010701.json?fields=code;
+    proxy_pass $off_url;
+    proxy_ssl_server_name on;
+    proxy_set_header Host world.openfoodfacts.org;
+    proxy_set_header User-Agent "MyFoodApp-sample-frontend-status/1.0";
+    proxy_connect_timeout 5s;
+    proxy_read_timeout 8s;
+  }
+  location = /probe/openai {
+    set $openai_url https://api.openai.com/v1/models;
+    proxy_pass $openai_url;
+    proxy_ssl_server_name on;
+    proxy_set_header Host api.openai.com;
+    proxy_set_header Authorization "";
+    proxy_connect_timeout 5s;
+    proxy_read_timeout 8s;
+  }
+  location = /probe/ocr {
+    set $ocr_url https://ocr.findmyproductapp.com/;
+    proxy_pass $ocr_url;
+    proxy_ssl_server_name on;
+    proxy_set_header Host ocr.findmyproductapp.com;
+    proxy_connect_timeout 5s;
+    proxy_read_timeout 8s;
+  }
+
+  # ---- latest test results for the Test Dashboard (bind-mounted, read-only) ----
+  location /test-results/ {
+    alias /usr/share/nginx/test-results/;
+    add_header Cache-Control "no-store";
+    default_type application/json;
+    autoindex off;
   }
 
   location /assets/ {
