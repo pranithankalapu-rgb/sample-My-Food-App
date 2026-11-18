@@ -8,8 +8,6 @@ const NAV: { to: string; label: string; admin?: boolean; auth?: boolean }[] = [
   { to: "/scan", label: "Label scan", auth: true },
   { to: "/profile", label: "Account & profile", auth: true },
   { to: "/admin", label: "Admin", admin: true },
-  { to: "/explorer", label: "API Explorer" },
-  { to: "/tests", label: "Test dashboard" },
 ];
 
 export function Layout() {
@@ -32,7 +30,7 @@ export function Layout() {
       </a>
       <header className="header">
         <NavLink to="/lookup" className="brand">
-          My Food App <small>API tester</small>
+          My Food App
         </NavLink>
         <div className="account">
           {session ? (
