@@ -4,7 +4,7 @@ Products in any of the given categories.
 
 ## Example: returns products of any listed category
 
-`POST http://api:9595/product/category` → **HTTP 200** in 6 ms
+`POST http://api:9595/product/category` → **HTTP 200** in 9 ms
 
 Request body:
 
@@ -39,7 +39,7 @@ Response body:
 
 ## Error example: 404 with a message when nothing matches
 
-`POST http://api:9595/product/category` → **HTTP 404** in 4 ms
+`POST http://api:9595/product/category` → **HTTP 404** in 17 ms
 
 Request body:
 

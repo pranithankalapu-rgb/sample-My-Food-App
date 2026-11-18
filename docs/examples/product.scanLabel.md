@@ -4,7 +4,7 @@ Read a food label photo. Sends the image and the user's user_info to the OCR ser
 
 ## Example: 400 without a file
 
-`POST http://api:9595/product/scan` → **HTTP 400** in 7 ms
+`POST http://api:9595/product/scan` → **HTTP 400** in 9 ms
 
 Request body:
 
@@ -38,7 +38,7 @@ Response body:
 
 ## Failing case: a label photo returns the OCR result
 
-`POST http://api:9595/product/scan` → **HTTP 503** in 10.03 s
+`POST http://api:9595/product/scan` → **HTTP 503** in 10.04 s
 
 Request body:
 
@@ -68,6 +68,7 @@ Response body:
   "error": "OCR failed",
   "message": "The label reader is temporarily unavailable. Please try again shortly.",
   "reason": "ocr_unavailable",
+  "fallback_available": true,
   "status": 503
 }
 ```

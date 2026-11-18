@@ -4,7 +4,7 @@ Remove a product from listings and search.
 
 ## Example: removes the product from listings; scans still work; a second delete is 404
 
-`DELETE http://api-t:9595/product/2099195835793` → **HTTP 200** in 4 ms
+`DELETE http://api-t:9595/product/2099966859300` → **HTTP 200** in 4 ms
 
 Response headers:
 
@@ -28,7 +28,7 @@ Response body:
 
 ## Error example: 403 for a signed-in non-admin (wrong role)
 
-`DELETE http://api-t:9595/product/8715700407760` → **HTTP 403** in 3 ms
+`DELETE http://api-t:9595/product/8715700407760` → **HTTP 403** in 2 ms
 
 Response headers:
 

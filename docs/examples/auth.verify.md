@@ -4,7 +4,7 @@ Confirm the email address with the emailed code.
 
 ## Example: the emailed code verifies the account
 
-`POST http://api-perf:9595/user` → **HTTP 201** in 70 ms
+`POST http://api-perf:9595/user` → **HTTP 201** in 75 ms
 
 Request body:
 
@@ -12,7 +12,7 @@ Request body:
 {
   "first_name": "Eetwoe",
   "last_name": "Tester",
-  "email": "e2e-verify-20261117181235ad65-3@example.test",
+  "email": "e2e-verify-202611181538303f52-3@example.test",
   "password": "<redacted>",
   "repassword": "<redacted>"
 }
@@ -37,15 +37,15 @@ Response body:
   "status": 201,
   "message": "User created successfully.",
   "user": {
-    "id": "f78c58bb-d892-4e2a-b277-617624f77f8d",
+    "id": "ccbe5ddf-c5d8-4aa9-96a5-208135f4cf72",
     "first_name": "Eetwoe",
     "last_name": "Tester",
-    "email": "e2e-verify-20261117181235ad65-3@example.test",
+    "email": "e2e-verify-202611181538303f52-3@example.test",
     "email_verification_status": "PENDING",
     "is_active": true,
     "role": "user",
-    "updatedAt": "2026-11-17T12:46:22.158Z",
-    "createdAt": "2026-11-17T12:46:22.158Z",
+    "updatedAt": "2026-11-18T10:11:24.370Z",
+    "createdAt": "2026-11-18T10:11:24.370Z",
     "mobile": null,
     "user_info": null,
     "type": null,
@@ -64,7 +64,7 @@ Request body:
 
 ```json
 {
-  "email": "e2e-x-20261117181235ad65-22@example.test",
+  "email": "e2e-x-202611181538303f52-22@example.test",
   "code": "<redacted>"
 }
 ```

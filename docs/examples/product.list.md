@@ -4,7 +4,7 @@ Browse the catalogue page by page.
 
 ## Example: returns a page with pageInfo
 
-`GET http://api:9595/product?page=1&limit=12` → **HTTP 200** in 9 ms
+`GET http://api:9595/product?page=1&limit=12` → **HTTP 200** in 10 ms
 
 Response headers:
 
@@ -28,7 +28,7 @@ Response body:
 
 ## Error example: 404 past the last page
 
-`GET http://api:9595/product?page=400&limit=100` → **HTTP 404** in 7 ms
+`GET http://api:9595/product?page=400&limit=100` → **HTTP 404** in 8 ms
 
 Response headers:
 

@@ -4,7 +4,7 @@ CMS uploads (images kept as uploaded; unused uploads are deleted after 24 h).
 
 ## Example: stores an image (201) with its pixel size; it is served, then deleted
 
-`POST http://api-t:9595/media/upload` → **HTTP 201** in 25 ms
+`POST http://api-t:9595/media/upload` → **HTTP 201** in 15 ms
 
 Request body:
 
@@ -30,8 +30,8 @@ Response body:
 {
   "uploadedFiles": [
     {
-      "file_id": "341239dd-c43b-44d7-8f51-dfeb8852c2fd",
-      "url": "1794919584456-1b27ebcf92b5c20b.png",
+      "file_id": "c001aa33-951e-4954-887d-e9aa5024e023",
+      "url": "1794996686755-543eb15bfbb97309.png",
       "mime_type": "image/png",
       "original_filename": "images-1",
       "width": 640,
@@ -44,7 +44,7 @@ Response body:
 
 ## Error example: 403 for a signed-in non-admin (wrong role)
 
-`POST http://api-t:9595/media/upload` → **HTTP 403** in 4 ms
+`POST http://api-t:9595/media/upload` → **HTTP 403** in 3 ms
 
 Request body:
 

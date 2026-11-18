@@ -4,7 +4,7 @@ Create an account. Email verification is not required to log in.
 
 ## Example: creates a user: 201 with the public user, no password
 
-`POST http://api-t:9595/user` → **HTTP 201** in 102 ms
+`POST http://api-t:9595/user` → **HTTP 201** in 101 ms
 
 Request body:
 
@@ -12,7 +12,7 @@ Request body:
 {
   "first_name": "Ada",
   "last_name": "Tester",
-  "email": "e2e-signup-20261117181235ad65-1@example.test",
+  "email": "e2e-signup-202611181538303f52-1@example.test",
   "password": "<redacted>",
   "repassword": "<redacted>"
 }
@@ -39,15 +39,15 @@ Response body:
   "status": 201,
   "message": "User created successfully.",
   "user": {
-    "id": "e55193e1-574f-4977-9d86-294a0f5f4200",
+    "id": "7e52294a-624a-4014-a92b-4119f55b4b75",
     "first_name": "Ada",
     "last_name": "Tester",
-    "email": "e2e-signup-20261117181235ad65-1@example.test",
+    "email": "e2e-signup-202611181538303f52-1@example.test",
     "email_verification_status": "PENDING",
     "is_active": true,
     "role": "user",
-    "updatedAt": "2026-11-17T12:46:18.805Z",
-    "createdAt": "2026-11-17T12:46:18.805Z",
+    "updatedAt": "2026-11-18T10:11:21.035Z",
+    "createdAt": "2026-11-18T10:11:21.035Z",
     "mobile": null,
     "user_info": null,
     "type": null,
@@ -60,14 +60,14 @@ Response body:
 
 ## Error example: 400 when first_name is missing
 
-`POST http://api-perf:9595/user` → **HTTP 400** in 4 ms
+`POST http://api-perf:9595/user` → **HTTP 400** in 5 ms
 
 Request body:
 
 ```json
 {
   "last_name": "Tester",
-  "email": "e2e-signup-20261117181235ad65-3@example.test",
+  "email": "e2e-signup-202611181538303f52-3@example.test",
   "password": "<redacted>",
   "repassword": "<redacted>"
 }

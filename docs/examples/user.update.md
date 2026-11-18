@@ -4,7 +4,7 @@ Save the health profile used for personal verdicts.
 
 ## Example: merges the health profile
 
-`PUT http://api:9595/user/9e7d2d52-ebff-4a73-8c61-23a2b115bf8e` → **HTTP 200** in 9 ms
+`PUT http://api:9595/user/39c08095-1235-49d7-9338-591a5b0b9fee` → **HTTP 200** in 5 ms
 
 Request body:
 
@@ -46,7 +46,7 @@ Response body:
 
 ## Error example: 400 without user_info
 
-`PUT http://api:9595/user/9e7d2d52-ebff-4a73-8c61-23a2b115bf8e` → **HTTP 400** in 5 ms
+`PUT http://api:9595/user/39c08095-1235-49d7-9338-591a5b0b9fee` → **HTTP 400** in 3 ms
 
 Request body:
 

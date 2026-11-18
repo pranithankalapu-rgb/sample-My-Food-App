@@ -4,7 +4,7 @@ Liveness probe used by Docker healthchecks. Not logged.
 
 ## Example: returns 200 {status: ok} without a token
 
-`GET http://api:9595/health` → **HTTP 200** in 47 ms
+`GET http://api:9595/health` → **HTTP 200** in 26 ms
 
 Response headers:
 

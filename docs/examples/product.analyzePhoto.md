@@ -4,7 +4,7 @@ AI report for a photo of any food; the verdict is scored on the server, never by
 
 ## Example: a food photo gets a full report with a server-scored verdict and a disclaimer
 
-`POST http://api-t:9595/product/analyze` → **HTTP 200** in 6.54 s
+`POST http://api-t:9595/product/analyze` → **HTTP 200** in 7.94 s
 
 Request body:
 
@@ -36,7 +36,7 @@ Response body:
     "confidence": "high",
     "name": "Tomato Ketchup Bio",
     "brand": "Heinz",
-    "description": "A squeeze bottle of organic tomato ketchup.",
+    "description": "Organic tomato ketchup in a squeeze bottle. Only the front label is visible.",
     "barcode": null,
     "known_product": false,
     "items": [],
@@ -57,28 +57,56 @@ Response body:
     },
     "nutrition": {
       "basis": "per 100 g",
-      "source": "unknown",
-      "values": {},
+      "source": "estimated",
+      "values": {
+        "energy-kcal_100g": 100,
+        "fat_100g": 0.2,
+        "carbohydrates_100g": 23,
+        "sugars_100g": 20,
+        "proteins_100g": 1,
+        "salt_100g": 2,
+        "sodium_100g": 0.8
+      },
       "serving": null
     },
     "nova_group": null,
     "additives": [],
     "health_notes": [
-      "Ketchup commonly contains added sugar and salt."
+      "Ketchup typically contains sugar and salt.",
+      "Nutrition values are estimates for typical ketchup, not values read from this product."
     ],
     "safety_notes": [],
     "verdict": {
       "recommended": false,
-      "verdict": "insufficient_data",
+      "verdict": "not_recommended",
       "report": {
-        "goodPoints": [],
-        "badPoints": []
+        "goodPoints": [
+          {
+            "check": "generic.calories",
+            "value": 100,
+            "threshold": {
+              "low": 150,
+              "high": 250
+            },
+            "status": "pass",
+            "message": "Moderate calories: 100 kcal (150 or less is moderate)"
+          }
+        ],
+        "badPoints": [
+          {
+            "check": "generic.sodium",
+            "value": 800,
+            "threshold": {
+              "low": 120,
+              "high": 600
+            },
+            "status": "fail",
+            "message": "High sodium: 800mg (above 600mg)"
+          }
+        ]
       },
       "missing_data": [
-        "sugar",
-        "salt",
-        "saturated fat",
-        "calories"
+        "saturated fat"
       ],
       "data_notice": "Nutrition for this product was found online and has not been checked yet. Check the label.",
       "is_drink": false
@@ -91,7 +119,7 @@ Response body:
 
 ## Failing case: POST /product/analyze (1 sample)
 
-`POST http://api-perf:9595/product/analyze` → **HTTP 200** in 6.35 s
+`POST http://api-perf:9595/product/analyze` → **HTTP 200** in 7.89 s
 
 Request body:
 
@@ -121,14 +149,19 @@ Response body:
     "confidence": "high",
     "name": "Tomato Ketchup Bio",
     "brand": "Heinz",
-    "description": "A squeeze bottle of organic tomato ketchup.",
+    "description": "Organic tomato ketchup in a squeeze bottle. Only the front label is visible.",
     "barcode": null,
     "known_product": false,
-    "items": [],
+    "items": [
+      {
+        "name": "Tomato ketchup",
+        "estimated_portion_g": null
+      }
+    ],
     "categories": [
       "ketchup",
       "condiment",
-      "organic food"
+      "organic"
     ],
     "is_drink": false,
     "quantity": null,
@@ -149,7 +182,7 @@ Response body:
     "nova_group": null,
     "additives": [],
     "health_notes": [
-      "Ketchup typically contains added sugar and salt."
+      "Ketchup commonly contains added sugar and salt; the nutrition label is not visible."
     ],
     "safety_notes": [],
     "verdict": {
@@ -184,5 +217,5 @@ Response body:
 Failure:
 
 ```text
-p95 6352 ms over the 3000 ms budget (p50 6352 ms): expected 6352 to be less than or equal to 3000
+p95 7889 ms over the 3000 ms budget (p50 7889 ms): expected 7889 to be less than or equal to 3000
 ```

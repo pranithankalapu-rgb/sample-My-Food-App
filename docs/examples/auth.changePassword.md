@@ -4,7 +4,7 @@ Reset the password with the emailed code (bumps token_version).
 
 ## Example: the emailed code changes the password and ends old sessions
 
-`POST http://api-perf:9595/user` → **HTTP 201** in 79 ms
+`POST http://api-perf:9595/user` → **HTTP 201** in 87 ms
 
 Request body:
 
@@ -12,7 +12,7 @@ Request body:
 {
   "first_name": "Eetwoe",
   "last_name": "Tester",
-  "email": "e2e-reset-20261117181235ad65-5@example.test",
+  "email": "e2e-reset-202611181538303f52-5@example.test",
   "password": "<redacted>",
   "repassword": "<redacted>"
 }
@@ -37,15 +37,15 @@ Response body:
   "status": 201,
   "message": "User created successfully.",
   "user": {
-    "id": "28e79e12-957a-46cc-a187-29abd2b683d3",
+    "id": "90cf8c5b-04fd-40aa-b709-3afebd90b5a9",
     "first_name": "Eetwoe",
     "last_name": "Tester",
-    "email": "e2e-reset-20261117181235ad65-5@example.test",
+    "email": "e2e-reset-202611181538303f52-5@example.test",
     "email_verification_status": "PENDING",
     "is_active": true,
     "role": "user",
-    "updatedAt": "2026-11-17T12:46:22.500Z",
-    "createdAt": "2026-11-17T12:46:22.500Z",
+    "updatedAt": "2026-11-18T10:11:24.725Z",
+    "createdAt": "2026-11-18T10:11:24.725Z",
     "mobile": null,
     "user_info": null,
     "type": null,
@@ -64,7 +64,7 @@ Request body:
 
 ```json
 {
-  "email": "e2e-x-20261117181235ad65-24@example.test",
+  "email": "e2e-x-202611181538303f52-24@example.test",
   "code": "<redacted>",
   "new_password": "<redacted>"
 }

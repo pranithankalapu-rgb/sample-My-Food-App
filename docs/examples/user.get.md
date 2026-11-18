@@ -4,7 +4,7 @@ Profile, scan quota and subscriptions.
 
 ## Example: returns the caller's profile with quota and subscriptions
 
-`GET http://api:9595/user/9e7d2d52-ebff-4a73-8c61-23a2b115bf8e` → **HTTP 200** in 5 ms
+`GET http://api:9595/user/39c08095-1235-49d7-9338-591a5b0b9fee` → **HTTP 200** in 5 ms
 
 Response headers:
 
@@ -24,10 +24,10 @@ Response body:
 {
   "status": 200,
   "user": {
-    "id": "9e7d2d52-ebff-4a73-8c61-23a2b115bf8e",
+    "id": "39c08095-1235-49d7-9338-591a5b0b9fee",
     "first_name": "Eetwoe",
     "last_name": "Tester",
-    "email": "e2e-user-20261117181235ad65-1@example.test",
+    "email": "e2e-user-202611181538303f52-1@example.test",
     "mobile": null,
     "email_verification_status": "PENDING",
     "user_info": null,
@@ -36,8 +36,8 @@ Response body:
     "type": null,
     "user_scan_count": 0,
     "last_scan_at": null,
-    "createdAt": "2026-11-17T12:47:07.432Z",
-    "updatedAt": "2026-11-17T12:47:07.432Z",
+    "createdAt": "2026-11-18T10:12:14.128Z",
+    "updatedAt": "2026-11-18T10:12:14.128Z",
     "deletedAt": null,
     "total_scan_limit": 100,
     "subscription_details": [],
@@ -48,7 +48,7 @@ Response body:
 
 ## Error example: 403 for another user's profile
 
-`GET http://api:9595/user/30b0172d-b5fa-4803-9885-05429fb2e760` → **HTTP 403** in 3 ms
+`GET http://api:9595/user/117fcf0d-bcce-4521-9192-e26ac714d413` → **HTTP 403** in 3 ms
 
 Response headers:
 

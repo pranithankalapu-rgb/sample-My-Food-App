@@ -4,7 +4,7 @@ Search and filter the catalogue. No brands in results.
 
 ## Example: finds a product by a word of its name
 
-`POST http://api:9595/product/search` → **HTTP 200** in 14 ms
+`POST http://api:9595/product/search` → **HTTP 200** in 11 ms
 
 Request body:
 
@@ -38,7 +38,7 @@ Response body:
 
 ## Failing case: stored country names are not mixed languages
 
-`POST http://api:9595/product/search` → **HTTP 200** in 7 ms
+`POST http://api:9595/product/search` → **HTTP 200** in 5 ms
 
 Request body:
 

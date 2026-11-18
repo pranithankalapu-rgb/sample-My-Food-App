@@ -4,7 +4,7 @@ Sign in with Google/Apple/Facebook via Firebase. FIREBASE_SERVICE_ACCOUNT is not
 
 ## Example: 400 without token and provider
 
-`POST http://api-t:9595/user/social/signin` → **HTTP 400** in 4 ms
+`POST http://api-t:9595/user/social/signin` → **HTTP 400** in 3 ms
 
 Request body:
 

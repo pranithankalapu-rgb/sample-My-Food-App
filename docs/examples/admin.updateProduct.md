@@ -4,13 +4,13 @@ CMS edit/create of a product (also updates the listing row, clears caches).
 
 ## Example: creates a CMS product (201), then updates it (200)
 
-`PUT http://api-t:9595/product/update` → **HTTP 201** in 16 ms
+`PUT http://api-t:9595/product/update` → **HTTP 201** in 15 ms
 
 Request body:
 
 ```json
 {
-  "product_code": "2099195835793",
+  "product_code": "2099966859300",
   "product_details": {
     "product_name": "E2E Test Muesli",
     "brands": "E2E Foods",
@@ -47,7 +47,7 @@ Request body:
 
 ```json
 {
-  "product_code": "2099195835793",
+  "product_code": "2099966859300",
   "product_details": {
     "product_name": "x"
   }

@@ -4,16 +4,16 @@ Record a purchase (ledger row).
 
 ## Example: records a pending purchase (201)
 
-`POST http://api-t:9595/subscription/add` → **HTTP 201** in 19 ms
+`POST http://api-t:9595/subscription/add` → **HTTP 201** in 9 ms
 
 Request body:
 
 ```json
 {
-  "from_date": "2026-11-17T12:47:09.492Z",
-  "to_date": "2026-12-17T12:47:09.492Z",
+  "from_date": "2026-11-18T10:12:15.728Z",
+  "to_date": "2026-12-18T10:12:15.728Z",
   "payment_status": "pending",
-  "transaction_id": "e2e-20261117181235ad65-1"
+  "transaction_id": "e2e-202611181538303f52-1"
 }
 ```
 
@@ -37,14 +37,14 @@ Response body:
 {
   "message": "Subscription added successfully",
   "subscription": {
-    "id": "e93f97d9-744c-4790-8b3a-1ce085b88ef0",
-    "user_id": "335eb8c1-8000-405e-8c40-55ea88fbc390",
-    "from_date": "2026-11-17T12:47:09.492Z",
-    "to_date": "2026-12-17T12:47:09.492Z",
+    "id": "09419df3-3ca1-4778-af2d-ab59314a726f",
+    "user_id": "9dfc3e59-669d-4c1a-87f6-e073b6a4a5bd",
+    "from_date": "2026-11-18T10:12:15.728Z",
+    "to_date": "2026-12-18T10:12:15.728Z",
     "payment_status": "pending",
-    "transaction_id": "e2e-20261117181235ad65-1",
-    "updatedAt": "2026-11-17T12:47:09.505Z",
-    "createdAt": "2026-11-17T12:47:09.505Z",
+    "transaction_id": "e2e-202611181538303f52-1",
+    "updatedAt": "2026-11-18T10:12:15.734Z",
+    "createdAt": "2026-11-18T10:12:15.734Z",
     "deletedAt": null
   }
 }
@@ -52,16 +52,16 @@ Response body:
 
 ## Failing case: a client cannot grant itself a paid subscription (payment_status from the app is not trusted)
 
-`POST http://api-t:9595/subscription/add` → **HTTP 201** in 7 ms
+`POST http://api-t:9595/subscription/add` → **HTTP 201** in 6 ms
 
 Request body:
 
 ```json
 {
-  "from_date": "2026-11-17T12:47:09.540Z",
-  "to_date": "2026-12-17T12:47:09.540Z",
+  "from_date": "2026-11-18T10:12:15.754Z",
+  "to_date": "2026-12-18T10:12:15.754Z",
   "payment_status": "completed",
-  "transaction_id": "e2e-20261117181235ad65-3"
+  "transaction_id": "e2e-202611181538303f52-3"
 }
 ```
 
@@ -85,14 +85,14 @@ Response body:
 {
   "message": "Subscription added successfully",
   "subscription": {
-    "id": "408bcaf8-4e98-437a-8cef-6d6c8e3a0cb4",
-    "user_id": "e48673a4-3c53-4e51-96c8-b037f80ac046",
-    "from_date": "2026-11-17T12:47:09.540Z",
-    "to_date": "2026-12-17T12:47:09.540Z",
+    "id": "95539d77-15a6-4c9e-8aeb-cb63f484769e",
+    "user_id": "1fe439fc-d120-4560-beb0-8c87ee92badf",
+    "from_date": "2026-11-18T10:12:15.754Z",
+    "to_date": "2026-12-18T10:12:15.754Z",
     "payment_status": "completed",
-    "transaction_id": "e2e-20261117181235ad65-3",
-    "updatedAt": "2026-11-17T12:47:09.545Z",
-    "createdAt": "2026-11-17T12:47:09.545Z",
+    "transaction_id": "e2e-202611181538303f52-3",
+    "updatedAt": "2026-11-18T10:12:15.758Z",
+    "createdAt": "2026-11-18T10:12:15.758Z",
     "deletedAt": null
   }
 }

@@ -23,23 +23,23 @@ Response body:
 ```json
 {
   "status": "degraded",
-  "checked_at": "2026-11-17T12:48:36.992Z",
+  "checked_at": "2026-11-18T10:14:17.819Z",
   "services": {
     "database": {
       "status": "up",
-      "ms": 55
+      "ms": 5
     },
     "open_food_facts": {
       "status": "up",
-      "ms": 591
+      "ms": 490
     },
     "openai": {
       "status": "up",
-      "ms": 1507
+      "ms": 1101
     },
     "ocr": {
       "status": "down",
-      "ms": 5001
+      "ms": 5002
     }
   }
 }

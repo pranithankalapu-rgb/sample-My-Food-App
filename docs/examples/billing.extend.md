@@ -4,7 +4,7 @@ Extend from the current end date.
 
 ## Example: without an active period it records a new one (201)
 
-`PUT http://api-t:9595/subscription/extend` → **HTTP 201** in 9 ms
+`PUT http://api-t:9595/subscription/extend` → **HTTP 201** in 7 ms
 
 Request body:
 
@@ -12,7 +12,7 @@ Request body:
 {
   "additional_days": 30,
   "payment_status": "pending",
-  "transaction_id": "e2e-20261117181235ad65-9"
+  "transaction_id": "e2e-202611181538303f52-9"
 }
 ```
 
@@ -36,14 +36,14 @@ Response body:
 {
   "message": "New subscription created successfully",
   "new_subscription": {
-    "id": "138e3bff-5a98-4443-affc-a869a33ba989",
-    "user_id": "8b0c74fa-b158-46c3-b550-732190f08fdb",
-    "from_date": "2026-11-17T12:47:09.593Z",
-    "to_date": "2026-12-17T12:47:09.593Z",
+    "id": "58d15e8f-488f-4e59-84cd-e597f4c7c4ad",
+    "user_id": "1d498bbd-e1b6-438f-8067-a774d5edd1d2",
+    "from_date": "2026-11-18T10:12:15.799Z",
+    "to_date": "2026-12-18T10:12:15.799Z",
     "payment_status": "pending",
-    "transaction_id": "e2e-20261117181235ad65-9",
-    "updatedAt": "2026-11-17T12:47:09.593Z",
-    "createdAt": "2026-11-17T12:47:09.593Z",
+    "transaction_id": "e2e-202611181538303f52-9",
+    "updatedAt": "2026-11-18T10:12:15.799Z",
+    "createdAt": "2026-11-18T10:12:15.799Z",
     "deletedAt": null
   }
 }
@@ -51,7 +51,7 @@ Response body:
 
 ## Error example: 400 for 0 or 401 days
 
-`PUT http://api-t:9595/subscription/extend` → **HTTP 400** in 9 ms
+`PUT http://api-t:9595/subscription/extend` → **HTTP 400** in 3 ms
 
 Request body:
 
@@ -59,7 +59,7 @@ Request body:
 {
   "additional_days": 0,
   "payment_status": "pending",
-  "transaction_id": "e2e-20261117181235ad65-10"
+  "transaction_id": "e2e-202611181538303f52-10"
 }
 ```
 

@@ -59,6 +59,8 @@ One passing (and, where the run had one, one failing) exchange per endpoint, rec
 - [15-profile.png](screenshots/15-profile.png)
 - [16-reset-password.png](screenshots/16-reset-password.png)
 - [17-admin-products.png](screenshots/17-admin-products.png)
+- [17-ocr-ai-fallback.png](screenshots/17-ocr-ai-fallback.png)
+- [17-ocr-down.png](screenshots/17-ocr-down.png)
 - [18-admin-users.png](screenshots/18-admin-users.png)
 - [19-explorer.png](screenshots/19-explorer.png)
 - [20-dashboard.png](screenshots/20-dashboard.png)

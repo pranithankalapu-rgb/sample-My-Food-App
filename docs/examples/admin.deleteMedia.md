@@ -4,7 +4,7 @@ Delete an uploaded file (does not check whether a product still references it).
 
 ## Example: 403 for a signed-in non-admin (wrong role)
 
-`DELETE http://api-t:9595/media/8a1c2a5e-1111-4bbb-8ccc-000000000000` → **HTTP 403** in 4 ms
+`DELETE http://api-t:9595/media/8a1c2a5e-1111-4bbb-8ccc-000000000000` → **HTTP 403** in 3 ms
 
 Response headers:
 

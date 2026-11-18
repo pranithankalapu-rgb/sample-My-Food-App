@@ -4,7 +4,7 @@ Serves product images (Open Food Facts copies and CMS uploads). Product response
 
 ## Example: serves a product image with an image content type
 
-`GET http://api:9595/uploads/images/off_8715700407760_front_88f5f9b85095580b.jpg` → **HTTP 200** in 5 ms
+`GET http://api:9595/uploads/images/off_8715700407760_front_88f5f9b85095580b.jpg` → **HTTP 200** in 8 ms
 
 Response headers:
 
@@ -26,7 +26,7 @@ Response body:
 
 ## Error example: answers 404 JSON for a file that does not exist
 
-`GET http://api:9595/uploads/images/does-not-exist-e2e.jpg` → **HTTP 404** in 4 ms
+`GET http://api:9595/uploads/images/does-not-exist-e2e.jpg` → **HTTP 404** in 6 ms
 
 Response headers:
 
