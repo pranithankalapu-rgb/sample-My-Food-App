@@ -7,7 +7,7 @@ It's completely separate from the backend. It has its own repo and its own Docke
 | | |
 |---|---|
 | Backend (separate repo) | `../api_myfoodproductapp`, run by `../docker-compose.yml` |
-| Endpoints covered | 33 of 33: the typed client (`src/api/`), the API Explorer and the tests (`src/data/api-inventory.json`, `docs/api-inventory.md`) |
+| Endpoints covered | 34 of 34 (33 at Phase 1, plus `GET /health/deps` from `fix/api-hardening`): the typed client (`src/api/`), the API Explorer and the tests (`src/data/api-inventory.json`, `docs/api-inventory.md`) |
 | Test report | `docs/api-test-report.md`, `test-results/report.html`, and the Test Dashboard at http://localhost:4200/#/tests |
 
 ## Requirements
@@ -33,7 +33,7 @@ The image build runs the typecheck, ESLint and the unit tests before the product
 
 | Page | What it does | Endpoints |
 |---|---|---|
-| Status | Live health and response time of the API, the database, Open Food Facts, OpenAI and the OCR service | `/health`, `/identifiers` + nginx probes |
+| Status | Live health and response time of the API, the database, Open Food Facts, OpenAI and the OCR service, plus the same services as the API itself sees them | `/health`, `/health/deps`, `/identifiers` + nginx probes |
 | Log in / Sign up | Password login, sign-up, admin (CMS) login, social sign-in, email verification, password reset | all 7 auth endpoints, `/cms/login` |
 | Barcode lookup | Typed input or camera scan; EAN-8/UPC-A/EAN-13 with check-digit validation; recent scans | `GET /product/{code}`, history |
 | Product detail | Image gallery with full-size viewer and zoom (placeholder when missing or broken, low-resolution note), nutrition, ingredients with highlighted allergens, countries in English, a data source badge (Open Food Facts / USDA / AI fallback / CMS) and "served from our database / fetched just now" | `GET /product/{code}` |
@@ -41,7 +41,7 @@ The image build runs the typecheck, ESLint and the unit tests before the product
 | Label scan | OCR label scan and AI photo analysis, with preview, upload progress and the result | `/product/scan`, `/product/analyze` |
 | Account & profile | Profile, health profile, quota, scan history, plans and subscriptions, log out everywhere, delete account | `/user/{id}` (GET/PUT/DELETE), increment-scan, history, subscriptions, identifiers, `/cms/logout` |
 | Admin (admins only) | Products (edit, remove from listing), needs review, needs better image, users, media upload and delete | all admin endpoints |
-| API Explorer | Every endpoint, with a form prefilled with valid examples, Send, and status, time, headers, pretty JSON and Copy as curl | all 33 |
+| API Explorer | Every endpoint, with a form prefilled with valid examples, Send, and status, time, headers, pretty JSON and Copy as curl | all 34 |
 | Test dashboard | Latest results: pass/fail per endpoint and case, timings, failures with the request and response, accuracy, Lighthouse, before/after | reads `test-results/*.json` |
 
 ## How it reaches the API
@@ -96,7 +96,7 @@ Destructive and fault-injection tests never touch your data. `scripts/apitest-st
 - **mailpit** on :8025, which catches verification and reset emails so the code flows can be tested
 - **toxiproxy** in front of Open Food Facts and OpenAI (via `extra_hosts`; TLS passes through untouched). These are the deliberate outage simulations, and the suite's only mocks.
 - `web-t` on :4201, this app pointed at `api-t`
-- **AI cost cap:** at most 12 + 3 OpenAI calls per run (the API's own per-instance budgets)
+- **AI cost cap:** at most 14 + 5 OpenAI calls per run (the API's own per-instance daily budgets on `api-t` and `api-perf`)
 
 Tests on the **real** stack only read data, or use this run's dedicated users. They create the users through the API; the admin account gets its role with a one-row `UPDATE`. Every user is deleted through the API at the end, even when tests fail. The stack is removed afterwards (`--keep-test-stack` keeps it).
 
@@ -109,7 +109,7 @@ docker compose -f docker-compose.yml -f docker-compose.tests.yml --profile tests
 ## Project layout
 
 ```
-src/api/            typed client: http.ts (timeout, retry), errors.ts, types.ts, endpoints.ts (33 functions + registry), queries.ts, probes.ts
+src/api/            typed client: http.ts (timeout, retry), errors.ts, types.ts, endpoints.ts (34 functions + registry), queries.ts, probes.ts
 src/pages/          Status, Login, Lookup, Product, Search, Scan, Profile, Admin, Explorer, Test dashboard, Not found
 src/components/     layout, route error boundary, toasts, skeletons, image with placeholder, gallery/zoom, tables
 src/data/           api-inventory.json (source of truth), results.ts (results format)

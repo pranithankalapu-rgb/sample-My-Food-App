@@ -4,7 +4,7 @@ Account deletion.
 
 ## Example: erases the account: token revoked, login fails, history gone
 
-`POST http://api:9595/user` → **HTTP 201** in 57 ms
+`POST http://api:9595/user` → **HTTP 201** in 71 ms
 
 Request body:
 
@@ -12,7 +12,7 @@ Request body:
 {
   "first_name": "Eetwoe",
   "last_name": "Tester",
-  "email": "e2e-delete-20261117154441af16-3@example.test",
+  "email": "e2e-delete-20261117181235ad65-3@example.test",
   "password": "<redacted>",
   "repassword": "<redacted>"
 }
@@ -22,7 +22,7 @@ Response headers:
 
 ```text
 content-type: application/json; charset=utf-8
-ratelimit: limit=20, remaining=14, reset=3298
+ratelimit: limit=20, remaining=14, reset=3383
 ratelimit-policy: 20;w=3600
 x-content-type-options: nosniff
 x-dns-prefetch-control: off
@@ -39,15 +39,15 @@ Response body:
   "status": 201,
   "message": "User created successfully.",
   "user": {
-    "id": "c3e4c530-9620-47aa-8861-2df304d3b1ee",
+    "id": "2118813a-5e59-4c1d-af7e-c523dd1dd7de",
     "first_name": "Eetwoe",
     "last_name": "Tester",
-    "email": "e2e-delete-20261117154441af16-3@example.test",
+    "email": "e2e-delete-20261117181235ad65-3@example.test",
     "email_verification_status": "PENDING",
     "is_active": true,
     "role": "user",
-    "updatedAt": "2026-11-17T10:20:32.666Z",
-    "createdAt": "2026-11-17T10:20:32.666Z",
+    "updatedAt": "2026-11-17T12:47:07.972Z",
+    "createdAt": "2026-11-17T12:47:07.972Z",
     "mobile": null,
     "user_info": null,
     "type": null,
@@ -60,7 +60,7 @@ Response body:
 
 ## Error example: 403 when deleting another user
 
-`DELETE http://api:9595/user/46257fb3-516e-441f-876d-97ee554aa146` → **HTTP 403** in 2 ms
+`DELETE http://api:9595/user/30b0172d-b5fa-4803-9885-05429fb2e760` → **HTTP 403** in 3 ms
 
 Response headers:
 

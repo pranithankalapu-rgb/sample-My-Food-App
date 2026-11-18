@@ -7,7 +7,7 @@ test.describe("Test dashboard", () => {
     const dashboard = page.getByTestId("dashboard");
     await expect(dashboard.or(page.getByTestId("no-results"))).toBeVisible();
     if (await dashboard.isVisible()) {
-      await expect(page.getByTestId("endpoint-table").locator("tbody tr")).toHaveCount(33);
+      await expect(page.getByTestId("endpoint-table").locator("tbody tr")).toHaveCount(34);
       await page.getByRole("button", { name: "failed" }).click();
       await expect(page.getByTestId("case-list")).toBeVisible();
     }

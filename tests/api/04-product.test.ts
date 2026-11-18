@@ -273,14 +273,21 @@ describe("POST /product/search", () => {
 
   check(
     { endpoint: "product.search", category: "success" },
-    "filters by country and category (exact stored values)",
+    "filters by country and category (a country under any of its stored names)",
     async () => {
+      // c258e31: a country filter also matches the other-language names stored for
+      // that country (backend data/countryAliases.json), never another country
+      const FRANCE = ["France", "Francia", "Frankreich", "Franța", "Frankrijk", "França"];
       const fr = await user.api.product.search({
         filters: [{ name: "countries", value: ["France"] }],
         page_size: 100,
       });
       expect(Number(fr.data.totalSearchResultsCount)).toBeGreaterThan(0);
-      expect(fr.data.results.every((r) => (r.countries ?? []).includes("France"))).toBe(true);
+      const notFrance = fr.data.results.filter((r) => !(r.countries ?? []).some((c) => FRANCE.includes(c)));
+      expect(
+        notFrance.map((r) => `${r.code} ${JSON.stringify(r.countries)}`),
+        "results without France under any of its names",
+      ).toEqual([]);
       const snacks = await user.api.product.search({
         filters: [{ name: "categories", value: "Snacks" }],
         page_size: 100,
@@ -291,19 +298,39 @@ describe("POST /product/search", () => {
 
   check(
     { endpoint: "product.search", category: "data quality" },
-    "a country filter finds every product of that country (names are not mixed languages)",
+    "a country filter finds every product of that country",
     async () => {
-      const english = await user.api.product.search({
+      const germany = await user.api.product.search({
         filters: [{ name: "countries", value: "Germany" }],
         page_size: 100,
       });
-      const french = await user.api.product.search({
-        filters: [{ name: "countries", value: "Allemagne" }],
+      const found = new Set(germany.data.results.map((r) => r.code));
+      for (const other of ["Allemagne", "Deutschland"]) {
+        const res = await user.api.product.search({
+          filters: [{ name: "countries", value: other }],
+          page_size: 100,
+        });
+        const missed = res.data.results.filter((r) => !found.has(r.code)).map((r) => r.code);
+        expect(
+          missed,
+          `products found by "${other}" that a "Germany" filter (${germany.data.totalSearchResultsCount}) misses`,
+        ).toEqual([]);
+      }
+    },
+  );
+
+  check(
+    { endpoint: "product.search", category: "data quality" },
+    "stored country names are not mixed languages",
+    async () => {
+      const germany = await user.api.product.search({
+        filters: [{ name: "countries", value: "Germany" }],
         page_size: 100,
       });
+      const french = germany.data.results.filter((r) => (r.countries ?? []).includes("Allemagne"));
       expect(
-        Number(french.data.totalSearchResultsCount),
-        `"Allemagne" (French for Germany) is stored for ${french.data.totalSearchResultsCount} products that a "Germany" filter (${english.data.totalSearchResultsCount}) misses`,
+        french.length,
+        `"Allemagne" (French for Germany) is the stored name for ${french.length} of ${germany.data.totalSearchResultsCount} German products`,
       ).toBe(0);
     },
   );

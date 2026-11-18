@@ -4,13 +4,13 @@ Email a password-reset code.
 
 ## Example: same 200 answer for an unknown address
 
-`POST http://api-t:9595/user/forgotpassword/code` → **HTTP 200** in 3 ms
+`POST http://api-t:9595/user/forgotpassword/code` → **HTTP 200** in 4 ms
 
 Request body:
 
 ```json
 {
-  "email": "e2e-unknown-20261117154441af16-23@example.test"
+  "email": "e2e-unknown-20261117181235ad65-23@example.test"
 }
 ```
 
@@ -67,6 +67,7 @@ Response body:
 {
   "error": "Bad Request",
   "message": "Please check the request inputs",
-  "details": "\"email\" is required"
+  "details": "\"email\" is required",
+  "status": 400
 }
 ```

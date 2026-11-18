@@ -4,7 +4,7 @@ Server-side logout (any signed-in user, not only admins).
 
 ## Example: logout ends every session of the caller
 
-`POST http://api-perf:9595/user` → **HTTP 201** in 57 ms
+`POST http://api-perf:9595/user` → **HTTP 201** in 61 ms
 
 Request body:
 
@@ -12,7 +12,7 @@ Request body:
 {
   "first_name": "Eetwoe",
   "last_name": "Tester",
-  "email": "e2e-logout-20261117154441af16-2@example.test",
+  "email": "e2e-logout-20261117181235ad65-2@example.test",
   "password": "<redacted>",
   "repassword": "<redacted>"
 }
@@ -37,15 +37,15 @@ Response body:
   "status": 201,
   "message": "User created successfully.",
   "user": {
-    "id": "45d127ac-77e9-46b7-9e76-55d187fd76ed",
+    "id": "032ae680-8ee7-4426-bd66-f25d5306a0a7",
     "first_name": "Eetwoe",
     "last_name": "Tester",
-    "email": "e2e-logout-20261117154441af16-2@example.test",
+    "email": "e2e-logout-20261117181235ad65-2@example.test",
     "email_verification_status": "PENDING",
     "is_active": true,
     "role": "user",
-    "updatedAt": "2026-11-17T10:19:45.799Z",
-    "createdAt": "2026-11-17T10:19:45.799Z",
+    "updatedAt": "2026-11-17T12:46:23.997Z",
+    "createdAt": "2026-11-17T12:46:23.997Z",
     "mobile": null,
     "user_info": null,
     "type": null,

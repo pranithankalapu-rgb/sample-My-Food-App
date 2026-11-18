@@ -4,7 +4,7 @@ Create an account. Email verification is not required to log in.
 
 ## Example: creates a user: 201 with the public user, no password
 
-`POST http://api-t:9595/user` → **HTTP 201** in 148 ms
+`POST http://api-t:9595/user` → **HTTP 201** in 102 ms
 
 Request body:
 
@@ -12,7 +12,7 @@ Request body:
 {
   "first_name": "Ada",
   "last_name": "Tester",
-  "email": "e2e-signup-20261117154441af16-1@example.test",
+  "email": "e2e-signup-20261117181235ad65-1@example.test",
   "password": "<redacted>",
   "repassword": "<redacted>"
 }
@@ -39,15 +39,15 @@ Response body:
   "status": 201,
   "message": "User created successfully.",
   "user": {
-    "id": "cea42d9b-5b20-40bd-bdfa-10e2bc82e20c",
+    "id": "e55193e1-574f-4977-9d86-294a0f5f4200",
     "first_name": "Ada",
     "last_name": "Tester",
-    "email": "e2e-signup-20261117154441af16-1@example.test",
+    "email": "e2e-signup-20261117181235ad65-1@example.test",
     "email_verification_status": "PENDING",
     "is_active": true,
     "role": "user",
-    "updatedAt": "2026-11-17T10:19:40.710Z",
-    "createdAt": "2026-11-17T10:19:40.710Z",
+    "updatedAt": "2026-11-17T12:46:18.805Z",
+    "createdAt": "2026-11-17T12:46:18.805Z",
     "mobile": null,
     "user_info": null,
     "type": null,
@@ -67,7 +67,7 @@ Request body:
 ```json
 {
   "last_name": "Tester",
-  "email": "e2e-signup-20261117154441af16-3@example.test",
+  "email": "e2e-signup-20261117181235ad65-3@example.test",
   "password": "<redacted>",
   "repassword": "<redacted>"
 }

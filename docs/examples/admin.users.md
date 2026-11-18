@@ -4,7 +4,7 @@ User management list for the CMS.
 
 ## Example: users list without secrets or health data
 
-`GET http://api-t:9595/users?page=1&limit=10` → **HTTP 200** in 5 ms
+`GET http://api-t:9595/users?page=1&limit=10` → **HTTP 200** in 8 ms
 
 Response headers:
 
@@ -25,10 +25,10 @@ Response body:
   "status": 200,
   "data": [
     {
-      "id": "85348cd0-3561-4adc-99fa-1e995ed3ec6b",
+      "id": "b07e8f65-3729-48cc-9949-82f777374ea1",
       "first_name": "Eetwoe",
       "last_name": "Tester",
-      "email": "e2e-admin-user-20261117154441af16-1@example.test",
+      "email": "e2e-admin-user-20261117181235ad65-1@example.test",
       "mobile": null,
       "email_verification_status": "PENDING",
       "role": "user",
@@ -36,15 +36,15 @@ Response body:
       "type": null,
       "user_scan_count": 0,
       "last_scan_at": null,
-      "createdAt": "2026-11-17T10:19:45.559Z",
-      "updatedAt": "2026-11-17T10:19:45.559Z",
+      "createdAt": "2026-11-17T12:46:23.747Z",
+      "updatedAt": "2026-11-17T12:46:23.747Z",
       "deletedAt": null
     },
     {
-      "id": "658b5c72-96c7-4824-b074-4b9d8fed391f",
+      "id": "fbcdc63e-0111-457c-98c6-b10b9bdea822",
       "first_name": "Admin",
       "last_name": "Tester",
-      "email": "e2e-admin-t20261117154441af16@example.test",
+      "email": "e2e-admin-t20261117181235ad65@example.test",
       "mobile": null,
       "email_verification_status": "PENDING",
       "role": "admin",
@@ -52,15 +52,15 @@ Response body:
       "type": null,
       "user_scan_count": 0,
       "last_scan_at": null,
-      "createdAt": "2026-11-17T10:15:20.336Z",
-      "updatedAt": "2026-11-17T10:15:20.336Z",
+      "createdAt": "2026-11-17T12:43:20.278Z",
+      "updatedAt": "2026-11-17T12:43:20.278Z",
       "deletedAt": null
     },
     {
-      "id": "f2df8055-a24a-415f-ae43-90857fbb675d",
+      "id": "17f124ae-2e07-4998-a230-1d3abcd79f3a",
       "first_name": "Eetwoe",
       "last_name": "Tester",
-      "email": "e2e-tuser-20261117154441af16@example.test",
+      "email": "e2e-tuser-20261117181235ad65@example.test",
       "mobile": null,
       "email_verification_status": "PENDING",
       "role": "user",
@@ -68,8 +68,8 @@ Response body:
       "type": null,
       "user_scan_count": 0,
       "last_scan_at": null,
-      "createdAt": "2026-11-17T10:15:19.928Z",
-      "updatedAt": "2026-11-17T10:15:19.928Z",
+      "createdAt": "2026-11-17T12:43:19.823Z",
+      "updatedAt": "2026-11-17T12:43:19.823Z",
       "deletedAt": null
     },
     {
@@ -119,6 +119,7 @@ Response body:
 {
   "error": "Bad Request",
   "message": "Please check the request inputs",
-  "details": "\"limit\" must be less than or equal to 100"
+  "details": "\"limit\" must be less than or equal to 100",
+  "status": 400
 }
 ```

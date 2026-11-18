@@ -4,7 +4,7 @@ AI report for a photo of any food; the verdict is scored on the server, never by
 
 ## Example: a food photo gets a full report with a server-scored verdict and a disclaimer
 
-`POST http://api-t:9595/product/analyze` → **HTTP 200** in 5.11 s
+`POST http://api-t:9595/product/analyze` → **HTTP 200** in 6.54 s
 
 Request body:
 
@@ -36,14 +36,14 @@ Response body:
     "confidence": "high",
     "name": "Tomato Ketchup Bio",
     "brand": "Heinz",
-    "description": "Organic tomato ketchup in a squeeze bottle.",
+    "description": "A squeeze bottle of organic tomato ketchup.",
     "barcode": null,
     "known_product": false,
     "items": [],
     "categories": [
-      "condiments",
       "ketchup",
-      "organic products"
+      "condiment",
+      "organic"
     ],
     "is_drink": false,
     "quantity": null,
@@ -64,7 +64,7 @@ Response body:
     "nova_group": null,
     "additives": [],
     "health_notes": [
-      "Ketchup typically contains sugar and salt; the nutrition label is not visible."
+      "Ketchup commonly contains added sugar and salt."
     ],
     "safety_notes": [],
     "verdict": {
@@ -91,7 +91,7 @@ Response body:
 
 ## Failing case: POST /product/analyze (1 sample)
 
-`POST http://api-perf:9595/product/analyze` → **HTTP 429** in 7 ms
+`POST http://api-perf:9595/product/analyze` → **HTTP 200** in 6.35 s
 
 Request body:
 
@@ -103,7 +103,6 @@ Response headers:
 
 ```text
 content-type: application/json; charset=utf-8
-retry-after: 60
 x-content-type-options: nosniff
 x-dns-prefetch-control: off
 x-download-options: noopen
@@ -116,12 +115,74 @@ Response body:
 
 ```json
 {
-  "message": "Too many photo analyses. Please try again later."
+  "report": {
+    "is_food": true,
+    "kind": "packaged_product",
+    "confidence": "high",
+    "name": "Tomato Ketchup Bio",
+    "brand": "Heinz",
+    "description": "A squeeze bottle of organic tomato ketchup.",
+    "barcode": null,
+    "known_product": false,
+    "items": [],
+    "categories": [
+      "ketchup",
+      "condiment",
+      "organic food"
+    ],
+    "is_drink": false,
+    "quantity": null,
+    "ingredients": {
+      "text": null,
+      "source": "unknown"
+    },
+    "allergens": {
+      "contains": [],
+      "may_contain": []
+    },
+    "nutrition": {
+      "basis": "per 100 g",
+      "source": "unknown",
+      "values": {},
+      "serving": null
+    },
+    "nova_group": null,
+    "additives": [],
+    "health_notes": [
+      "Ketchup typically contains added sugar and salt."
+    ],
+    "safety_notes": [],
+    "verdict": {
+      "recommended": false,
+      "verdict": "insufficient_data",
+      "report": {
+        "goodPoints": [],
+        "badPoints": []
+      },
+      "missing_data": [
+        "sugar",
+        "salt",
+        "saturated fat",
+        "calories"
+      ],
+      "allergens": {
+        "check": "allergens",
+        "value": [],
+        "threshold": null,
+        "status": "unknown",
+        "message": "No allergen information for this product. Check the label."
+      },
+      "data_notice": "Nutrition for this product was found online and has not been checked yet. Check the label.",
+      "is_drink": false
+    },
+    "disclaimer": "This report was produced by AI from your photo. Values read from a label can still be misread, and values for meals or produce are estimates. Always check the label, especially for allergens."
+  },
+  "model": "gpt-6.1-terra"
 }
 ```
 
 Failure:
 
 ```text
-1 unexpected errors in 1 calls: expected 1 to be +0 // Object.is equality
+p95 6352 ms over the 3000 ms budget (p50 6352 ms): expected 6352 to be less than or equal to 3000
 ```

@@ -2,9 +2,9 @@ import { test, expect } from "@playwright/test";
 import { shot } from "./helpers.js";
 
 test.describe("API Explorer", () => {
-  test("lists all 33 endpoints from the inventory", async ({ page }) => {
+  test("lists all 34 endpoints from the inventory", async ({ page }) => {
     await page.goto("/#/explorer");
-    await expect(page.locator('[data-testid^="explorer-endpoint-"]')).toHaveCount(33);
+    await expect(page.locator('[data-testid^="explorer-endpoint-"]')).toHaveCount(34);
   });
 
   test("sends GET /health and shows status, time and pretty JSON", async ({ page }) => {

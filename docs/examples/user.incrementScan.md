@@ -4,7 +4,7 @@ Legacy: reports the scan quota. Scans are counted by the lookup itself; this nev
 
 ## Example: reports the quota without counting a scan
 
-`PUT http://api:9595/user/b6aa6d4b-d8da-4218-afae-a318e6c916f5/increment-scan` → **HTTP 200** in 3 ms
+`PUT http://api:9595/user/9e7d2d52-ebff-4a73-8c61-23a2b115bf8e/increment-scan` → **HTTP 200** in 4 ms
 
 Response headers:
 
@@ -33,7 +33,7 @@ Response body:
 
 ## Error example: 403 for another user
 
-`PUT http://api:9595/user/46257fb3-516e-441f-876d-97ee554aa146/increment-scan` → **HTTP 403** in 2 ms
+`PUT http://api:9595/user/30b0172d-b5fa-4803-9885-05429fb2e760/increment-scan` → **HTTP 403** in 4 ms
 
 Response headers:
 

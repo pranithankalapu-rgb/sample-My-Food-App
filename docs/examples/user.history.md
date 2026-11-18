@@ -4,7 +4,7 @@ The user's recently scanned products (admins are never recorded).
 
 ## Example: lists a looked-up product once, newest first; the scan is counted once
 
-`GET http://api:9595/user/b6aa6d4b-d8da-4218-afae-a318e6c916f5` → **HTTP 200** in 3 ms
+`GET http://api:9595/user/9e7d2d52-ebff-4a73-8c61-23a2b115bf8e` → **HTTP 200** in 8 ms
 
 Response headers:
 
@@ -24,10 +24,10 @@ Response body:
 {
   "status": 200,
   "user": {
-    "id": "b6aa6d4b-d8da-4218-afae-a318e6c916f5",
+    "id": "9e7d2d52-ebff-4a73-8c61-23a2b115bf8e",
     "first_name": "Eetwoe",
     "last_name": "Tester",
-    "email": "e2e-user-20261117154441af16-1@example.test",
+    "email": "e2e-user-20261117181235ad65-1@example.test",
     "mobile": null,
     "email_verification_status": "PENDING",
     "user_info": {
@@ -47,8 +47,8 @@ Response body:
     "type": null,
     "user_scan_count": 0,
     "last_scan_at": null,
-    "createdAt": "2026-11-17T10:20:32.256Z",
-    "updatedAt": "2026-11-17T10:20:32.556Z",
+    "createdAt": "2026-11-17T12:47:07.432Z",
+    "updatedAt": "2026-11-17T12:47:07.800Z",
     "deletedAt": null,
     "total_scan_limit": 100,
     "subscription_details": [],
@@ -59,7 +59,7 @@ Response body:
 
 ## Error example: 403 for another user's history
 
-`GET http://api:9595/product/history/user/46257fb3-516e-441f-876d-97ee554aa146` → **HTTP 403** in 2 ms
+`GET http://api:9595/product/history/user/30b0172d-b5fa-4803-9885-05429fb2e760` → **HTTP 403** in 5 ms
 
 Response headers:
 

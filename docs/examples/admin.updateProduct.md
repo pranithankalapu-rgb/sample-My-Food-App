@@ -4,13 +4,13 @@ CMS edit/create of a product (also updates the listing row, clears caches).
 
 ## Example: creates a CMS product (201), then updates it (200)
 
-`PUT http://api-t:9595/product/update` → **HTTP 201** in 13 ms
+`PUT http://api-t:9595/product/update` → **HTTP 201** in 16 ms
 
 Request body:
 
 ```json
 {
-  "product_code": "2099107853914",
+  "product_code": "2099195835793",
   "product_details": {
     "product_name": "E2E Test Muesli",
     "brands": "E2E Foods",
@@ -41,13 +41,13 @@ Response body:
 
 ## Error example: 403 for a signed-in non-admin (wrong role)
 
-`PUT http://api-t:9595/product/update` → **HTTP 403** in 2 ms
+`PUT http://api-t:9595/product/update` → **HTTP 403** in 3 ms
 
 Request body:
 
 ```json
 {
-  "product_code": "2099107853914",
+  "product_code": "2099195835793",
   "product_details": {
     "product_name": "x"
   }

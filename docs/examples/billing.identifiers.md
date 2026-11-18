@@ -4,7 +4,7 @@ In-app purchase product identifiers and prices.
 
 ## Example: lists the plans without a token
 
-`GET http://api:9595/identifiers` → **HTTP 200** in 4 ms
+`GET http://api:9595/identifiers` → **HTTP 200** in 6 ms
 
 Response headers:
 

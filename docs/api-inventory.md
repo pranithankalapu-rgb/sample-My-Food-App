@@ -2,7 +2,7 @@
 
 Backend `api_myfoodproductapp` at commit `eb7971e68f08642789e5d6f4a354469f0a061cb6`. Generated from `src/data/api-inventory.json` (the machine-readable source of truth) on 2026-11-17.
 
-**33 endpoints**: 31 router registrations in `lib/api/content/index.js` and 2 app-level routes in `lib/app.js`. Swagger/OpenAPI: none (no OpenAPI/Swagger file in the backend).
+**34 endpoints**: 31 router registrations in `lib/api/content/index.js` and 3 app-level routes in `lib/app.js`. Phase 1 found 33; `GET /health/deps` (row 34) was added on `fix/api-hardening` (`25d456b`, issue #14). Swagger/OpenAPI: none (no OpenAPI/Swagger file in the backend).
 
 Sources read:
 - lib/app.js (app-level routes: /health, /uploads static, JSON 404 and error handler)
@@ -13,12 +13,14 @@ Sources read:
 
 ## Coverage
 
-| | Count |
-|---|---|
-| Integrated in the web app | **6 of 33** |
-| Tested by the web app's e2e suite (any case) | **11 of 33** (9 beyond a no-token check) |
-| Tested by the backend's own Jest suite | 30 of 33 |
-| Tested anywhere | 30 of 33 |
+| | Phase 1 (before the upgrade) | Now |
+|---|---|---|
+| Integrated in the web app | **6 of 33** | **34 of 34** (typed client, pages and API Explorer) |
+| Tested by the web app's suites | **11 of 33** (9 beyond a no-token check) | **34 of 34** (vitest api + Playwright) |
+| Tested by the backend's own Jest suite | 30 of 33 | 31 of 34 |
+| Tested anywhere | 30 of 33 | 34 of 34 |
+
+The per-endpoint columns below are the Phase 1 snapshot; current coverage per endpoint is in `src/data/api-inventory.json` and the Test Dashboard.
 
 ## Summary
 
@@ -57,6 +59,7 @@ Sources read:
 | 31 | POST | `/subscription/add` | token | 10/min per user | DB | no | no | hardening, security |
 | 32 | PUT | `/subscription/extend` | token | 10/min per user | DB | no | no | hardening, security |
 | 33 | GET | `/identifiers` | public | — | DB | no | no | no |
+| 34 | GET | `/health/deps` | public | — (cached 30 s) | DB, Open Food Facts, OpenAI, OCR | Status page | api 01-system, e2e 01-status | apiHardening.test.js |
 
 ## Authentication and common errors
 

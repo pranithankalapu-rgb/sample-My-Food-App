@@ -4,13 +4,13 @@ Email a 6-digit account verification code (only to PENDING accounts; re-sends th
 
 ## Example: same 200 answer for an unknown address (no account enumeration)
 
-`POST http://api-t:9595/user/verify/code` → **HTTP 200** in 11 ms
+`POST http://api-t:9595/user/verify/code` → **HTTP 200** in 5 ms
 
 Request body:
 
 ```json
 {
-  "email": "e2e-unknown-20261117154441af16-21@example.test"
+  "email": "e2e-unknown-20261117181235ad65-21@example.test"
 }
 ```
 
@@ -66,6 +66,7 @@ Response body:
 {
   "error": "Bad Request",
   "message": "Please check the request inputs",
-  "details": "\"email\" is required"
+  "details": "\"email\" is required",
+  "status": 400
 }
 ```

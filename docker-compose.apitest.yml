@@ -158,10 +158,11 @@ services:
     environment:
       <<: *api-env
       BASE_URL: http://localhost:9599
-      # speed sampling only: the rate limits themselves are tested on api-t
+      # speed sampling only: the rate limits themselves are tested on api-t.
+      # AI cap: 2 fallback lookups + 1 photo analysis + headroom for background fill-ins
       RATE_LIMIT: "off"
-      AI_LOOKUP_MAX_PER_DAY: "3"
-      AI_LOOKUP_MAX_PER_USER_PER_DAY: "3"
+      AI_LOOKUP_MAX_PER_DAY: "5"
+      AI_LOOKUP_MAX_PER_USER_PER_DAY: "5"
     ports:
       - "127.0.0.1:9599:9595"
     healthcheck:

@@ -16,7 +16,7 @@ Response headers:
 
 ```text
 content-type: application/json; charset=utf-8
-ratelimit: limit=20, remaining=18, reset=39
+ratelimit: limit=20, remaining=18, reset=50
 ratelimit-policy: 20;w=60
 x-content-type-options: nosniff
 x-dns-prefetch-control: off
@@ -30,13 +30,15 @@ Response body:
 
 ```json
 {
-  "error": "No image file uploaded"
+  "error": "No image file uploaded",
+  "status": 400,
+  "message": "No image file uploaded"
 }
 ```
 
 ## Failing case: a label photo returns the OCR result
 
-`POST http://api:9595/product/scan` → **HTTP 500** in 21.12 s
+`POST http://api:9595/product/scan` → **HTTP 503** in 10.03 s
 
 Request body:
 
@@ -50,6 +52,7 @@ Response headers:
 content-type: application/json; charset=utf-8
 ratelimit: limit=20, remaining=19, reset=60
 ratelimit-policy: 20;w=60
+retry-after: 30
 x-content-type-options: nosniff
 x-dns-prefetch-control: off
 x-download-options: noopen
@@ -62,12 +65,15 @@ Response body:
 
 ```json
 {
-  "error": "OCR failed"
+  "error": "OCR failed",
+  "message": "The label reader is temporarily unavailable. Please try again shortly.",
+  "reason": "ocr_unavailable",
+  "status": 503
 }
 ```
 
 Failure:
 
 ```text
-Something went wrong on the server. Please try again.
+The label reader is temporarily unavailable. Please try again shortly.
 ```

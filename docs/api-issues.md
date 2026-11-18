@@ -1,28 +1,61 @@
 # API issues found by the test suite
 
-Baseline run `20261117154441af16`, backend `eb7971e`: **441 cases, 421 passed, 20 failed**, all 33 endpoints tested. The full results are in [api-test-report.md](api-test-report.md), on the Test Dashboard (http://localhost:4200/#/tests) and in `test-results/results.json`.
+**Before:** baseline run `20261117154441af16`, backend `eb7971e`: **441 cases, 421 passed, 20 failed**, 33 endpoints.
+**After:** run `20261117181235ad65`, backend `92ca6d9` (`fix/api-hardening`): **446 cases, 430 passed, 16 failed**, 34 endpoints (`GET /health/deps` added). Full results: [api-test-report.md](api-test-report.md) (with a before/after section), `test-results/report.html` and the Test Dashboard (http://localhost:4200/#/tests).
 
-Every failure below is real: backend behaviour, stored data, an external service, or the CMS. None comes from the test harness. Harness problems found while building the suite (rate-limited setup, selectors, my own documentation error on the verdict shape, an Open Food Facts rate limit misread as "not found") were fixed before this baseline.
+Every failure is real: backend behaviour, stored data, an external service or the CMS. Test changes after the baseline only follow agreed behaviour changes, and none of them loosens a check:
+- the endpoint count went from 33 to 34;
+- a country filter may now return the country's other stored names;
+- the old country check is now two: a filter check, and a strict check that stored names are a single language, which still fails;
+- the speed-test API's AI cap went from 3 to 5, so `/product/analyze` is actually measured;
+- barcode, OCR and `/health/deps` expectations follow the approved changes.
 
-**Status** is either **Open** (waiting for approval, Checkpoint 2) or **Fixed** (with the commit on `fix/api-hardening`).
+**Status:**
+- **Fixed:** commit on `fix/api-hardening`, unit or integration tests in the backend; Jest passes 459 of 459.
+- **Partly fixed:** see the evidence.
+- **Not fixed:** the reason is given.
 
-| # | Severity | Endpoint | Problem | Evidence | Status |
+| # | Severity | Endpoint | Problem (before) | After (evidence) | Status |
 |---|---|---|---|---|---|
-| 1 | **High** | `POST /subscription/add`, `PUT /subscription/extend` | A client can give itself a paid subscription: `payment_status: "completed"` sent by the app is stored as sent (`SUBSCRIPTION_VERIFICATION=client`), which means unlimited scans with no purchase check | `POST /subscription/add {payment_status:"completed"}` → 201, then `GET /user/{id}` shows `active_subscription` set | Open |
-| 2 | **High** | `GET /product/{code}` | No barcode validation before external lookups. Letters, wrong lengths and bad check digits go to Open Food Facts **and the paid AI fallback**, and junk can be stored | `GET /product/ABCDEFGH` → 404 after an OpenAI call (~10k tokens). `GET /product/1234` → **200**, a product named "Barcode 1234 ist nur ein Platzhalter, nicht ausfüllen" is stored. `GET /product/8715700407761` (typo, check digit should be 0) → OpenAI call | Open |
-| 3 | Medium | `POST /product/analyze` (and every AI path) | The background fill-in of missing images/nutrition spends the AI budget on its own; a user's photo analysis was then refused | Test-stack log: AI lookup for `8000500037560` (`found:true`) that no test asked for; `POST /product/analyze` → **429** "Too many photo analyses" | Open |
-| 4 | Medium | `GET /product`, `/product/search`, `GET /product/{code}` | `image_thumb_url` is the full-size original for uploaded images | 80 of 103 thumbnails are originals; **65 MB** for all thumbnails; Lighthouse product page LCP 11 s (desktop, simulated throttling) | Open |
-| 5 | Medium | `GET /product/{code}` (stored data) | Ingredient lists: 14 of 20 sampled have problems | 6 end with a separator (e.g. Tomato Ketchup BIO "…garlic powder,"); 2 are **not English although Open Food Facts has English** (Fibres `7300400481588`, Solero `8712100889288`: "Ingrédients LAIT écrémé…" vs OFF "reconstituted skimmed milk…"); 5 have no English version anywhere (fr/es/lb); 1 contains Open Food Facts markup `_oat_` (Flocons d'avoine) | Open |
-| 6 | Medium | `GET /product/{code}` | Accuracy vs live Open Food Facts: 2 of 20 differ, both on ingredient language (see #5); name, brand, 5 nutrients and images match for all 20 | Solero 13% word overlap, Pur beurre de cacahuète 8% (stored French, OFF has English) | Open |
-| 7 | Medium | `POST /product/search` (filters), listing data | Country names in the listing mix languages, so a country filter misses products | `filters:[{countries:"Allemagne"}]` → 17 products that `"Germany"` (10) does not return; also Maroc, Suisse, Belgique, Espagne | Open |
-| 8 | Medium | `POST /product/scan` | The OCR service is down, and the API reports it as **500** "OCR failed" after ~21 s. It should be 502/503 with Retry-After, and fail faster | `POST /product/scan` → 500 `{"error":"OCR failed"}`; p50 21.1 s, p95 22.1 s; the host itself times out | Open (service outside this repo) |
-| 9 | Medium | `GET /product/{code}` (AI path) | A barcode nobody knows takes 9–11 s (Open Food Facts miss + OpenAI) and up to 25 s before "still looking" | AI fallback p50 8.9 s, p95 11.0 s; slow-OpenAI test answers 404 `lookup_pending` after 25.5 s (by design: `FALLBACK_WAIT_MS`) | Open (recommendation) |
-| 10 | Low | `POST /product/search` | One-letter and stopword searches return nothing, with no hint | `{query:"a"}` → `totalSearchResultsCount:"0"` | Open |
-| 11 | Low | `POST /product/category`, `/product/additives` | Results have no image fields, unlike browse and search | Response rows lack `image_url` / `image_thumb_url` | Open |
-| 12 | Low | CMS (`cms_myfoodproductapp`) | The product list shows no thumbnails | `.products-grid .card img` not found (both phases) | Open (CMS repo, not the API) |
-| 13 | Low | many | Five different error body shapes (`{error,message,details}`, `{status,message}`, `{message}`, `{error}`, `{status:"error",message}`) | Phase 1 audit; the app's client handles all five | Open |
-| 14 | Low | `GET /health` | Static `{status:"ok"}`: it doesn't check the database, Open Food Facts or OpenAI | Phase 1 audit | Open |
-| 15 | Low | `DELETE /media/{id}` | Deletes a file even when a product still uses it (broken image URL afterwards) | Phase 1 code audit (not exercised destructively) | Open |
+| 1 | **High** | `POST /subscription/add`, `PUT /subscription/extend` | A client can give itself a paid subscription: `payment_status: "completed"` is stored as sent | Unchanged on purpose. Strict mode stays off (decision at Checkpoint 2). The risk, a read-only check query and an 8-step receipt verification plan are in the backend's `docs/BILLING.md` (`92ca6d9`) | **Not fixed**: documented, planned as separate work |
+| 2 | **High** | `GET /product/{code}` | No barcode validation before Open Food Facts and the paid AI; `1234` stored a junk product | Letters, wrong lengths and bad check digits → 404 `reason:"invalid_barcode"` in < 500 ms, no external call (3 tests now pass) | **Fixed** `da3f901` |
+| 3 | Medium | `POST /product/analyze` (every AI path) | The background fill-in spent the user's AI budget, so the user was refused (429) | Background calls have their own daily cap (`AI_ENRICH_MAX_PER_DAY`). All 5 photo tests pass on `api-t`. The speed sample now returns 200 in 6.35 s | **Fixed** `859e643` |
+| 4 | Medium | `GET /product`, `/product/search`, `GET /product/{code}` | `image_thumb_url` was the full-size original (65 MB of thumbnails) | Real 400 px WebP thumbnails on first request; "thumbnails are smaller than the full image" passes | **Fixed** `288d028` |
+| 5 | Medium | `GET /product/{code}` (stored data) | Ingredient lists: markup, trailing separators, not English | New lookups and imports are cleaned (`16c3d10`). Stored lists were cleaned on 2026-11-18 by `z/clean_ingredients_text.js`: 38 of 103 changed, 0 admin-edited skipped, a dry run afterwards finds 0 left, and the old texts are backed up in `../backups/ingredients-backup-20261118T055142Z.json`. The after-run above predates this cleanup. Lists Open Food Facts has only in French or Spanish, or whose "English" field is another language or another recipe, stay as they are: there is nothing correct to replace them with | **Partly fixed** |
+| 6 | Medium | `GET /product/{code}` | Accuracy vs live Open Food Facts: 2 of 20 differ (ingredient language) | 20 of 20 match (name, brand, 5 nutrients, ingredients, image) | **Fixed** `16c3d10` |
+| 7 | Medium | `POST /product/search` (filters) | A country filter missed products stored under another language ("Allemagne" vs "Germany") | Filters match every known name of the country; "Germany" finds all 38. Stored names are still mixed (17 of 38 German products say "Allemagne"), which the strict check still reports | **Fixed** (filter) `c258e31`; stored names not changed |
+| 8 | Medium | `POST /product/scan` | OCR down → **500** after ~22 s | **503** + `Retry-After: 30`, `reason:"ocr_unavailable"`, after 10 s (p95 22.08 s → 10.04 s). The OCR service itself is still down | **Fixed** (API side) `5d38253`; service outside this repo |
+| 9 | Medium | `GET /product/{code}` (AI path) | Unknown barcodes take 9–11 s (Open Food Facts miss + OpenAI) | p95 11.46 s, unchanged | **Not fixed**: recommendation (below) |
+| 10 | Low | `POST /product/search` | One-letter and stopword searches returned nothing | They match names starting with the text | **Fixed** `8e6da15` |
+| 11 | Low | `POST /product/category`, `/product/additives` | No image fields | `image_url` / `image_thumb_url` added (additive) | **Fixed** `1acfc10` |
+| 12 | Low | CMS (`cms_myfoodproductapp`) | The product list shows no thumbnails | Unchanged | **Not fixed**: CMS repo, out of scope |
+| 13 | Low | many | Five error body shapes | Every JSON error now also carries a numeric `status` and a `message` (additive, nothing removed) | **Fixed** `26e35d0` |
+| 14 | Low | `GET /health` | Static; checks nothing | New `GET /health/deps`: database, Open Food Facts, OpenAI, OCR (up/down/disabled/misconfigured, cached 30 s). `/health` unchanged | **Fixed** `25d456b` |
+| 15 | Low | `DELETE /media/{id}` | Deleted files still used by a product | 409 with the product code | **Fixed** `b80e02e` |
+| 16 | Low | Listing data | Country values that are not country names (JSON fragments, and the same country in several languages) | Found while testing #7; data only | **Not fixed**: data cleanup to plan |
+
+### Failures in the after-run that are not product issues
+
+The after-run also has 3 fallback failures that are not on the list above:
+- "3. OpenAI last" and "4. a definite miss is remembered": a 503 instead of a 404.
+- "OFF down … the outage is not remembered" (a 4th, "OFF slow", failed in its toxiproxy reset hook).
+
+All four passed in the previous run against the **same backend image** (`92ca6d9`), and the test file was not changed. In this run Open Food Facts answered the test API with a 503 in 0.5 s while no fault was injected, the first Open Food Facts lookup took 65 s, and the toxiproxy admin call timed out. **Likely cause:** Open Food Facts degraded or rate-limited during the run. This is not confirmed by a re-run; the next full run will show whether these tests pass again.
+
+**Lighthouse (desktop):** Search best practices 100 → 96, and Test Dashboard performance 52 → 34 (the dashboard renders a larger `results.json`). These have not been investigated yet. Every other page is the same or within ±5.
+
+## Recommendations, ranked by impact and effort
+
+| Rank | Recommendation | Impact | Effort |
+|---|---|---|---|
+| 1 | **Verify purchases on the server** (#1): App Store / Play receipt validation, then turn on strict mode (plan in `docs/BILLING.md`) | High: free unlimited scans for anyone who edits a request | 3–5 days |
+| 2 | **Restore or replace the OCR service** (#8): label scans fail for every user while it is down; `/health/deps` now shows it | High | Ops, outside the API |
+| 3 | **Re-check ingredient lists** (#5): the stored cleanup ran on 2026-11-18; the next full run should show the trailing-separator and markup problems gone | Medium | One test run |
+| 4 | **Faster AI path** (#9): answer `lookup_pending` sooner (lower `FALLBACK_WAIT_MS`), let the app poll, and use a faster model for barcode lookups | Medium: 10 s waits for unknown barcodes | 1–2 days |
+| 5 | **Normalise stored country names** (#7, #16) to the English list, with a migration and backup; the filter already copes | Low–medium | 1 day |
+| 6 | **CMS thumbnails** (#12): show `image_thumb_url` on the CMS product cards | Low | Hours (CMS repo) |
+| 7 | **Monitor `/health/deps`** and alert on "down" or "misconfigured" | Medium | Hours |
+| 8 | **Product page image** (Lighthouse 69 desktop): serve a resized display image instead of the original | Low–medium | Hours |
 
 ## What works well (verified)
 

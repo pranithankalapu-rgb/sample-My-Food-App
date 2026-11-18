@@ -5,6 +5,7 @@ One passing (and, where the run had one, one failing) exchange per endpoint, rec
 | Endpoint | Example |
 |---|---|
 | GET `/health` | [health.md](health.md) |
+| GET `/health/deps` | [health.deps.md](health.deps.md) |
 | GET `/uploads/images/{file}` | [uploads.static.md](uploads.static.md) |
 | POST `/user` | [auth.signup.md](auth.signup.md) |
 | POST `/login` | [auth.login.md](auth.login.md) |

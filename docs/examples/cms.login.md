@@ -4,13 +4,13 @@ Admin login for the CMS (short token lifetime).
 
 ## Example: an admin gets a token
 
-`POST http://api-t:9595/cms/login` → **HTTP 200** in 57 ms
+`POST http://api-t:9595/cms/login` → **HTTP 200** in 67 ms
 
 Request body:
 
 ```json
 {
-  "email": "e2e-admin-t20261117154441af16@example.test",
+  "email": "e2e-admin-t20261117181235ad65@example.test",
   "password": "<redacted>"
 }
 ```
@@ -36,10 +36,10 @@ Response body:
   "status": 200,
   "message": "Login successful.",
   "user": {
-    "id": "658b5c72-96c7-4824-b074-4b9d8fed391f",
+    "id": "fbcdc63e-0111-457c-98c6-b10b9bdea822",
     "first_name": "Admin",
     "last_name": "Tester",
-    "email": "e2e-admin-t20261117154441af16@example.test",
+    "email": "e2e-admin-t20261117181235ad65@example.test",
     "mobile": null,
     "email_verification_status": "PENDING",
     "user_info": null,
@@ -48,8 +48,8 @@ Response body:
     "type": null,
     "user_scan_count": 0,
     "last_scan_at": null,
-    "createdAt": "2026-11-17T10:15:20.336Z",
-    "updatedAt": "2026-11-17T10:15:20.336Z",
+    "createdAt": "2026-11-17T12:43:20.278Z",
+    "updatedAt": "2026-11-17T12:43:20.278Z",
     "deletedAt": null
   },
   "token": "<redacted>"
@@ -58,13 +58,13 @@ Response body:
 
 ## Error example: a normal user gets the same 401 as a wrong password
 
-`POST http://api-t:9595/cms/login` → **HTTP 401** in 58 ms
+`POST http://api-t:9595/cms/login` → **HTTP 401** in 56 ms
 
 Request body:
 
 ```json
 {
-  "email": "e2e-admin-user-20261117154441af16-1@example.test",
+  "email": "e2e-admin-user-20261117181235ad65-1@example.test",
   "password": "<redacted>"
 }
 ```
