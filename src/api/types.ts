@@ -277,8 +277,22 @@ export interface RawListResponse {
   data: ListingProduct[];
 }
 
-export interface OcrResponse {
-  ocrData: unknown;
+/**
+ * POST /product/scan: the OCR service's answer as `ocrData`; or, when the OCR
+ * service is down and the client asked for `?fallback=ai`, the AI photo
+ * analysis (`source: "ai_fallback"`, same report as /product/analyze).
+ */
+export type OcrResponse =
+  | { ocrData: unknown; source?: undefined }
+  | { source: "ai_fallback"; reason: string; report: PhotoReport; model?: string };
+
+/** The 503 body of POST /product/scan when the OCR service is unavailable. */
+export interface OcrUnavailableBody {
+  error?: string;
+  message?: string;
+  reason?: string;
+  /** the API can read the label with AI instead (?fallback=ai) */
+  fallback_available?: boolean;
 }
 
 export interface PhotoReport {

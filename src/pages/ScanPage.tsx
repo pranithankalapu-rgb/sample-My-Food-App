@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useMutation } from "@tanstack/react-query";
-import { api, type AnalyzeResponse, type OcrResponse } from "../api";
+import { api, isApiError, type AnalyzeResponse, type OcrResponse, type OcrUnavailableBody } from "../api";
 import { JsonView } from "../components/common";
 import { NutritionTable, VerdictDetails } from "../components/productBits";
 import { ErrorPanel, usePageTitle } from "../components/states";
@@ -93,14 +93,23 @@ function Uploader({ kind }: { kind: Tab }) {
   );
 
   const m = useMutation({
-    mutationFn: async (f: File): Promise<ScanOutcome> => {
+    mutationFn: async ({ f, fallback }: { f: File; fallback?: boolean }): Promise<ScanOutcome> => {
       setProgress(0);
       const opts = { onUploadProgress: setProgress };
       return kind === "ocr"
-        ? { kind: "ocr", data: (await api.product.scanLabel(f, opts)).data }
+        ? {
+            kind: "ocr",
+            data: (await api.product.scanLabel(f, fallback ? { ...opts, fallback: "ai" } : opts)).data,
+          }
         : { kind: "analyze", data: (await api.product.analyzePhoto(f, opts)).data };
     },
   });
+  // the OCR service is down and the API offers to read the label with AI instead
+  const aiFallbackOffered =
+    kind === "ocr" &&
+    isApiError(m.error) &&
+    m.error.status === 503 &&
+    (m.error.body as OcrUnavailableBody | undefined)?.fallback_available === true;
 
   const choose = (f: File | null) => {
     m.reset();
@@ -134,7 +143,7 @@ function Uploader({ kind }: { kind: Tab }) {
             setLocalError("Choose a photo first.");
             return;
           }
-          m.mutate(file);
+          m.mutate({ f: file });
         }}
       >
         <label>
@@ -184,7 +193,7 @@ function Uploader({ kind }: { kind: Tab }) {
           onRetry={
             file
               ? () => {
-                  m.mutate(file);
+                  m.mutate({ f: file });
                 }
               : undefined
           }
@@ -195,15 +204,39 @@ function Uploader({ kind }: { kind: Tab }) {
               If this keeps happening, the OCR service may be down: see the Status page.
             </p>
           )}
+          {aiFallbackOffered && file && (
+            <p>
+              <button
+                type="button"
+                data-testid="scan-ai-fallback"
+                onClick={() => {
+                  m.mutate({ f: file, fallback: true });
+                }}
+              >
+                Read the label with AI instead
+              </button>{" "}
+              <span className="muted small">Only the photo is sent to the AI. Counts as one scan.</span>
+            </p>
+          )}
         </ErrorPanel>
       )}
-      {m.data?.kind === "ocr" && <OcrResult data={m.data.data} />}
+      {m.data?.kind === "ocr" &&
+        (m.data.data.source === "ai_fallback" ? (
+          <div data-testid="scan-ai-result">
+            <p className="notice" data-testid="scan-fallback-note">
+              The label reader (OCR) is unavailable, so this label was read by AI.
+            </p>
+            <AnalyzeResult data={{ report: m.data.data.report, model: m.data.data.model }} />
+          </div>
+        ) : (
+          <OcrResult data={m.data.data} />
+        ))}
       {m.data?.kind === "analyze" && <AnalyzeResult data={m.data.data} />}
     </div>
   );
 }
 
-function OcrResult({ data }: { data: OcrResponse }) {
+function OcrResult({ data }: { data: { ocrData: unknown } }) {
   const text = findText(data.ocrData);
   return (
     <div data-testid="scan-result">

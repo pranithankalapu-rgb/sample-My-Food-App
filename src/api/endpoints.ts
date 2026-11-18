@@ -75,12 +75,16 @@ export function createApi(http: HttpClient) {
         call<T.RawListResponse>("POST", "/product/category", { json: body, ...o }),
       byAdditives: (body: { additives_tags: string[] }, o?: Opts) =>
         call<T.RawListResponse>("POST", "/product/additives", { json: body, ...o }),
-      scanLabel: (image: Blob | undefined, o?: Opts) =>
-        call<T.OcrResponse>("POST", "/product/scan", {
+      /** `fallback: "ai"`: when the OCR service is down, the API reads the label with AI instead. */
+      scanLabel: (image: Blob | undefined, o?: Opts & { fallback?: "ai" }) => {
+        const { fallback, ...rest } = o ?? {};
+        return call<T.OcrResponse>("POST", "/product/scan", {
           form: fileForm("images", image, "label"),
           timeoutMs: SCAN_TIMEOUT_MS,
-          ...o,
-        }),
+          ...(fallback ? { query: { fallback } } : {}),
+          ...rest,
+        });
+      },
       analyzePhoto: (image: Blob | undefined, o?: Opts) =>
         call<T.AnalyzeResponse>("POST", "/product/analyze", {
           form: fileForm("images", image, "photo"),
