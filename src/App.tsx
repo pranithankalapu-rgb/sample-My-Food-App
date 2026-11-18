@@ -21,6 +21,8 @@ const TestDashboardPage = lazy(() => import("./pages/TestDashboardPage"));
 const page = (node: ReactNode) => <Suspense fallback={<Skeleton lines={6} />}>{node}</Suspense>;
 
 const router = createHashRouter([
+  // full-screen, outside the app shell (no header or sidebar)
+  { path: "/login", element: <LoginPage />, errorElement: <RouteError /> },
   {
     path: "/",
     element: <Layout />,
@@ -28,7 +30,6 @@ const router = createHashRouter([
     children: [
       { index: true, element: <Navigate to="/lookup" replace />, errorElement: <RouteError /> },
       { path: "status", element: <StatusPage />, errorElement: <RouteError /> },
-      { path: "login", element: <LoginPage />, errorElement: <RouteError /> },
       {
         path: "lookup",
         element: (

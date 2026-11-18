@@ -15,28 +15,42 @@ export interface Session {
 interface SessionContextValue {
   session: Session | null;
   isAdmin: boolean;
-  signIn: (session: Session) => void;
+  signIn: (session: Session, options?: { remember?: boolean }) => void;
   signOut: (message?: string) => void;
   updateUser: (patch: Partial<PublicUser>) => void;
 }
 
 const SessionContext = createContext<SessionContextValue | null>(null);
 
+// "Remember me" keeps the session in localStorage (survives a browser restart);
+// without it the session lives in sessionStorage (this tab only).
+function parse(raw: string | null): Session | null {
+  if (!raw) return null;
+  const parsed = JSON.parse(raw) as Partial<Session>;
+  return typeof parsed.token === "string" && parsed.user ? (parsed as Session) : null;
+}
+
 function load(): Session | null {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw) as Partial<Session>;
-    return typeof parsed.token === "string" && parsed.user ? (parsed as Session) : null;
+    return parse(localStorage.getItem(STORAGE_KEY)) ?? parse(sessionStorage.getItem(STORAGE_KEY));
   } catch {
     return null;
   }
 }
 
-function save(session: Session | null): void {
+function isRemembered(): boolean {
   try {
-    if (session) localStorage.setItem(STORAGE_KEY, JSON.stringify(session));
-    else localStorage.removeItem(STORAGE_KEY);
+    return localStorage.getItem(STORAGE_KEY) !== null;
+  } catch {
+    return false;
+  }
+}
+
+function save(session: Session | null, remember = true): void {
+  try {
+    localStorage.removeItem(STORAGE_KEY);
+    sessionStorage.removeItem(STORAGE_KEY);
+    if (session) (remember ? localStorage : sessionStorage).setItem(STORAGE_KEY, JSON.stringify(session));
   } catch {
     // storage blocked (private mode): the session lives in memory only
   }
@@ -50,9 +64,9 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     return s;
   });
 
-  const signIn = useCallback((next: Session) => {
+  const signIn = useCallback((next: Session, options?: { remember?: boolean }) => {
     setApiToken(next.token);
-    save(next);
+    save(next, options?.remember ?? true);
     setSession(next);
   }, []);
 
@@ -70,7 +84,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     setSession((current) => {
       if (!current) return current;
       const next = { ...current, user: { ...current.user, ...patch } };
-      save(next);
+      save(next, isRemembered());
       return next;
     });
   }, []);

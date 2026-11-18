@@ -36,7 +36,7 @@ test.describe("auth and profile (real stack, dedicated user)", () => {
     const problems = watchConsole(page, { allowStatus: [401, 403] });
 
     await page.goto("/#/login");
-    await page.getByRole("tab", { name: "Sign up" }).click();
+    await page.getByRole("button", { name: "Sign up", exact: true }).click();
     const form = page.getByRole("form", { name: "Sign up" });
     await form.getByLabel("First name").fill("Eetwoe");
     await form.getByLabel("Last name").fill("Tester");
@@ -115,7 +115,7 @@ test.describe("email flows and subscriptions (test stack, mailpit)", () => {
     expect(signup.status()).toBe(201);
 
     await page.goto(`${WEB_T_URL}/#/login`);
-    await page.getByRole("tab", { name: "Verify email" }).click();
+    await page.getByRole("button", { name: "Verify email", exact: true }).click();
     const flow = page.getByTestId("verify-flow");
     await flow.getByLabel("Email", { exact: true }).fill(email);
     const sentAt = new Date();
@@ -127,7 +127,7 @@ test.describe("email flows and subscriptions (test stack, mailpit)", () => {
     await flow.getByRole("button", { name: "Confirm" }).click();
     await expect(page.getByTestId("verify-flow-done")).toBeVisible();
 
-    await page.getByRole("tab", { name: "Reset password" }).click();
+    await page.getByRole("button", { name: "Reset password", exact: true }).click();
     const reset = page.getByTestId("reset-flow");
     await reset.getByLabel("Email", { exact: true }).fill(email);
     const resetAt = new Date();
