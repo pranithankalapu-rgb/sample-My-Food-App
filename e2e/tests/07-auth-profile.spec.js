@@ -114,20 +114,9 @@ test.describe("email flows and subscriptions (test stack, mailpit)", () => {
     });
     expect(signup.status()).toBe(201);
 
+    // the login card no longer links to the verify-email flow; reset is reached via "Forgot password?"
     await page.goto(`${WEB_T_URL}/#/login`);
-    await page.getByRole("button", { name: "Verify email", exact: true }).click();
-    const flow = page.getByTestId("verify-flow");
-    await flow.getByLabel("Email", { exact: true }).fill(email);
-    const sentAt = new Date();
-    await flow.getByRole("button", { name: "Email me a verification code" }).click();
-    await expect(page.getByTestId("verify-flow-sent")).toBeVisible();
-    await flow
-      .getByLabel("6-digit code")
-      .fill(await mailCode(request, email, sentAt, "account verification"));
-    await flow.getByRole("button", { name: "Confirm" }).click();
-    await expect(page.getByTestId("verify-flow-done")).toBeVisible();
-
-    await page.getByRole("button", { name: "Reset password", exact: true }).click();
+    await page.getByRole("button", { name: "Forgot password?", exact: true }).click();
     const reset = page.getByTestId("reset-flow");
     await reset.getByLabel("Email", { exact: true }).fill(email);
     const resetAt = new Date();

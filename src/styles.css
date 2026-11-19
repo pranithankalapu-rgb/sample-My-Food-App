@@ -1096,11 +1096,16 @@ progress {
   background-color: #e9e2c4;
 }
 .auth-card {
-  width: min(100%, 500px);
-  padding: 40px 44px 28px;
-  border-radius: 26px;
-  /* highly transparent glass: the produce stays clearly visible through the panel */
-  background: linear-gradient(145deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.06));
+  box-sizing: border-box;
+  width: min(100%, 540px);
+  min-height: 422px;
+  padding: 24px 44px 20px;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  /* semi-transparent white glass: the produce stays visible through the panel */
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.26), rgba(255, 255, 255, 0.14));
   border: 1px solid rgba(255, 255, 255, 0.55);
   box-shadow:
     0 20px 50px rgba(30, 40, 15, 0.22),
@@ -1117,6 +1122,45 @@ progress {
 }
 .auth-card:focus {
   outline: none;
+}
+/* the main log-in view is a fixed 540 × 422 box; the longer secondary views grow from that */
+.auth-card.is-login {
+  height: 422px;
+}
+.auth-card.is-login .auth-brand {
+  margin-bottom: 18px;
+}
+.auth-card.is-login .auth-logo {
+  width: 60px;
+  height: 50px;
+}
+.auth-card.is-login .auth-title {
+  font-size: 2rem;
+}
+.auth-card.is-login .auth-tagline {
+  margin-top: 2px;
+  font-size: 0.95rem;
+}
+.auth-card.is-login .auth-form {
+  gap: 12px;
+}
+.auth-card.is-login .auth-input input {
+  height: 48px;
+}
+.auth-card.is-login .auth-primary {
+  height: 50px;
+  font-size: 1.1rem;
+}
+.auth-card.is-login .auth-row {
+  padding: 4px 12px;
+}
+.auth-card.is-login .auth-switch {
+  margin-top: 12px;
+  padding: 3px 16px;
+}
+.auth-card.is-login .auth-more {
+  margin-top: 10px;
+  padding: 3px 12px;
 }
 
 .auth-brand {
@@ -1383,21 +1427,21 @@ progress {
     --auth-photo: url("/login-bg-small.webp");
   }
 }
-/* wide screens: the card grows with the photo, so it covers the photo's blurred centre */
-@media (min-width: 1100px) and (orientation: landscape) {
-  .auth-card {
-    width: clamp(500px, 40vw, 640px);
-    padding: 44px clamp(44px, 5vw, 80px) 30px;
+/* short viewports: let the box grow rather than clip its content */
+@media (max-height: 470px) {
+  .auth-card.is-login {
+    height: auto;
   }
 }
 @media (max-width: 560px) {
   .auth-screen {
     padding: 20px 16px;
-    align-items: start;
   }
   .auth-card {
-    padding: 28px 20px 20px;
-    border-radius: 22px;
+    padding: 24px 20px 18px;
+  }
+  .auth-card.is-login {
+    height: auto;
   }
   .auth-brand {
     gap: 8px;

@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from "react";
 import { useMutation } from "@tanstack/react-query";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { api } from "../api";
 import { useSession } from "../auth/session";
 import { useToast } from "../components/Toasts";
@@ -15,18 +15,14 @@ const VIEW_TITLES: Record<Exclude<View, "login">, string> = {
   reset: "Reset your password",
 };
 // secondary flows, linked at the bottom of the card
-const MORE: { id: View; label: string }[] = [
-  { id: "admin", label: "Admin login" },
-  { id: "verify", label: "Verify email" },
-  { id: "reset", label: "Reset password" },
-];
+const MORE: { id: View; label: string }[] = [{ id: "admin", label: "Admin login" }];
 
 export function LoginPage() {
   usePageTitle("Log in");
   const [view, setView] = useState<View>("login");
   return (
     <div className="auth-screen">
-      <main className="auth-card" aria-labelledby="auth-brand">
+      <main className={view === "login" ? "auth-card is-login" : "auth-card"} aria-labelledby="auth-brand">
         <BrandMark />
         {view === "login" ? (
           <MainLogin onNavigate={setView} />
@@ -62,9 +58,6 @@ export function LoginPage() {
               {m.label}
             </button>
           ))}
-          <Link to="/status" className="auth-link">
-            Service status
-          </Link>
         </nav>
       </main>
     </div>
@@ -191,19 +184,6 @@ function MainLogin({ onNavigate }: { onNavigate: (view: View) => void }) {
           {!m.isPending && <ArrowIcon />}
         </button>
       </form>
-      <div className="auth-divider" role="separator">
-        <span>or</span>
-      </div>
-      <button
-        type="button"
-        className="auth-google"
-        onClick={() => {
-          onNavigate("social");
-        }}
-      >
-        <GoogleIcon />
-        Continue with Google
-      </button>
       <p className="auth-switch">
         Don’t have an account?{" "}
         <button
@@ -264,29 +244,6 @@ function ArrowIcon({ flip = false }: { flip?: boolean }) {
   return (
     <svg {...iconProps} className={flip ? "auth-icon flip" : "auth-icon"}>
       <path d="M5 12h14M13 6l6 6-6 6" />
-    </svg>
-  );
-}
-
-function GoogleIcon() {
-  return (
-    <svg viewBox="0 0 48 48" className="auth-icon" aria-hidden="true">
-      <path
-        fill="#FFC107"
-        d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"
-      />
-      <path
-        fill="#FF3D00"
-        d="m6.3 14.7 6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"
-      />
-      <path
-        fill="#4CAF50"
-        d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"
-      />
-      <path
-        fill="#1976D2"
-        d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"
-      />
     </svg>
   );
 }
