@@ -35,12 +35,10 @@ test.describe("admin (test stack)", () => {
     expect((await check.json()).product.brands).toBe(`${original} (e2e)`);
   });
 
-  test("needs-review, needs-better-image and users tabs", async ({ page }) => {
+  test("needs-review and users tabs", async ({ page }) => {
     await page.goto(`${WEB_T_URL}/#/admin`);
     await page.getByRole("tab", { name: "Needs review" }).click();
     await expect(page.getByTestId("review-table").or(page.getByTestId("review-empty"))).toBeVisible();
-    await page.getByRole("tab", { name: "Needs better image" }).click();
-    await expect(page.getByTestId("image-queue-table").or(page.getByTestId("images-empty"))).toBeVisible();
     await page.getByRole("tab", { name: "Users" }).click();
     await expect(page.getByTestId("admin-users")).toBeVisible();
     await expect(page.getByTestId("admin-users")).toContainText(fixtures().testAdmin.email);

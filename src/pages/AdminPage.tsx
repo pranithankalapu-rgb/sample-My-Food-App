@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { api, type QueueResponse, type UploadedFile } from "../api";
-import { keys, useImageQueue, useProductList, useReviewQueue, useUsers } from "../api/queries";
+import { keys, useProductList, useReviewQueue, useUsers } from "../api/queries";
 import { useSession } from "../auth/session";
 import { ProductImage } from "../components/ProductImage";
 import { Pagination } from "../components/common";
@@ -11,11 +11,10 @@ import { EmptyState, ErrorPanel, Skeleton, usePageTitle } from "../components/st
 import { formatDate } from "../lib/format";
 import { sourceLabel } from "../components/productBits";
 
-type Tab = "products" | "review" | "images" | "users" | "media";
+type Tab = "products" | "review" | "users" | "media";
 const TABS: { id: Tab; label: string }[] = [
   { id: "products", label: "Products" },
   { id: "review", label: "Needs review" },
-  { id: "images", label: "Needs better image" },
   { id: "users", label: "Users" },
   { id: "media", label: "Media" },
 ];
@@ -43,7 +42,6 @@ export default function AdminPage() {
       </div>
       {tab === "products" && <Products />}
       {tab === "review" && <ReviewQueue />}
-      {tab === "images" && <ImageQueue />}
       {tab === "users" && <Users />}
       {tab === "media" && <Media />}
     </section>
@@ -245,15 +243,7 @@ function EditProduct({ code, onDone }: { code: string; onDone: () => void }) {
   );
 }
 
-function QueueTable({
-  data,
-  testId,
-  showSize,
-}: {
-  data: QueueResponse["data"];
-  testId: string;
-  showSize?: boolean;
-}) {
+function QueueTable({ data, testId }: { data: QueueResponse["data"]; testId: string }) {
   return (
     <table className="table" data-testid={testId}>
       <thead>
@@ -261,7 +251,7 @@ function QueueTable({
           <th scope="col">Image</th>
           <th scope="col">Product</th>
           <th scope="col">Source</th>
-          <th scope="col">{showSize ? "Image size" : "Added"}</th>
+          <th scope="col">Added</th>
         </tr>
       </thead>
       <tbody>
@@ -283,13 +273,7 @@ function QueueTable({
               <span className="muted small">{p.brands}</span>
             </td>
             <td>{sourceLabel({ data_source: p.data_source ?? null, source_info: p.source_info ?? null })}</td>
-            <td>
-              {showSize
-                ? p.image_width && p.image_height
-                  ? `${p.image_width}×${p.image_height}`
-                  : "no image"
-                : formatDate(p.created_at)}
-            </td>
+            <td>{formatDate(p.created_at)}</td>
           </tr>
         ))}
       </tbody>
@@ -326,31 +310,6 @@ function ReviewQueue() {
         verified”.
       </p>
       <QueueTable data={data} testId="review-table" />
-      <Pagination page={page} pages={pageInfo.pages} onPage={setPage} />
-    </>
-  );
-}
-
-function ImageQueue() {
-  const [page, setPage] = useState(1);
-  const q = useImageQueue(page);
-  if (q.isPending) return <Skeleton lines={4} />;
-  if (q.isError)
-    return (
-      <ErrorPanel
-        error={q.error}
-        title="Could not load the image queue"
-        onRetry={() => {
-          void q.refetch();
-        }}
-      />
-    );
-  const { data, pageInfo } = q.data.data;
-  if (data.length === 0) return <EmptyState title="Every product has a good image" testId="images-empty" />;
-  return (
-    <>
-      <p className="muted">{pageInfo.total} products need a sharper image (smallest first).</p>
-      <QueueTable data={data} testId="image-queue-table" showSize />
       <Pagination page={page} pages={pageInfo.pages} onPage={setPage} />
     </>
   );
